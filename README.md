@@ -12,6 +12,9 @@ A minimalistic macOS desktop application that reads text aloud from the system c
 - **Speed Control** - Adjustable speech rate (0.5x to 2.0x)
 - **Minimal UI** - Tiny floating player that doesn't get in the way
 
+
+**Note**: application only works for macOS, future support for Windows and Linux is planned.
+
 ## Download
 
 Download the latest release:
