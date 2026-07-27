@@ -1,0 +1,13 @@
+[package]
+name = "tts-reader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = { workspace = true, features = ["desktop"] }
+dioxus-desktop = { workspace = true }
+tokio = { version = "1", features = ["time"] }
+ui = { workspace = true }
+
+[features]
+default = []

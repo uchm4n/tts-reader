@@ -1,0 +1,7 @@
+[application]
+name = "tts-reader"
+default-platform = "desktop"
+
+[bundle]
+identifier = "com.uchm4n.ttsreader"
+publisher = "UchMan"

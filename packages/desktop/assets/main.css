@@ -1,0 +1,110 @@
+/* TTS Reader - Minimal Light Theme (shadcn-inspired) */
+
+:root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --border: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+}
+
+.app {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: hsl(var(--background));
+}
+
+/* Player Bar */
+.player-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    height: 48px;
+    background-color: hsl(var(--background));
+}
+
+/* Icon Buttons */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius);
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    cursor: pointer;
+    transition: all 0.15s ease;
+    outline: none;
+    flex-shrink: 0;
+}
+
+.icon-btn:hover {
+    background-color: hsl(var(--accent, 240 4.8% 95.9%));
+}
+
+.icon-btn:focus-visible {
+    box-shadow: 0 0 0 2px hsl(var(--ring));
+}
+
+.icon-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.icon-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.icon-btn.play {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-color: hsl(var(--primary));
+}
+
+.icon-btn.play:hover {
+    background-color: hsl(240 5.9% 20%);
+}
+
+.icon-btn.play svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Speed Label */
+.speed-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+    min-width: 36px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    margin-left: 4px;
+}
+
+/* Info Button */
+.info-btn {
+    margin-left: 8px;
+}

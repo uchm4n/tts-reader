@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = [
+    "packages/ui",
+    "packages/desktop",
+]
+
+[workspace.dependencies]
+dioxus = { version = "0.7.1" }
+dioxus-desktop = { version = "0.7.1" }
+
+# workspace
+ui = { path = "packages/ui" }
+
+[profile.release]
+strip = true
+opt-level = "s"
+lto = true
