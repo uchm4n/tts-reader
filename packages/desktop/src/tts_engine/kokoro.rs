@@ -1,11 +1,19 @@
 //! Kokoro TTS backend using kokoro-en crate.
 
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use kokoro_en::{KokoroTts, Voice};
 use rodio::buffer::SamplesBuffer;
 use rodio::{OutputStream, Sink};
+
+// Embedded model and voice files for self-contained builds.
+// Users can override via KOKORO_MODEL_DIR / KOKORO_VOICE_DIR env vars.
+const MODEL_BYTES: &[u8] = include_bytes!("../../../../packages/kokoro/models/model.onnx");
+const VOICES: &[(&str, &[u8])] = &[
+    ("af_heart.bin", include_bytes!("../../../../packages/kokoro/voices/af_heart.bin")),
+    ("am_adam.bin", include_bytes!("../../../../packages/kokoro/voices/am_adam.bin")),
+];
 
 struct AudioState {
     _stream: OutputStream,
@@ -25,29 +33,54 @@ pub struct KokoroBackend {
 // The raw pointer to AudioState is only created, read, and dropped on the main thread.
 unsafe impl Send for KokoroBackend {}
 
+/// Write embedded files to a temp directory and return (model_path, voice_dir).
+fn write_embedded_to_temp() -> Result<(PathBuf, String), String> {
+    let temp = std::env::temp_dir().join("tts-reader");
+    std::fs::create_dir_all(&temp)
+        .map_err(|e| format!("Failed to create temp dir: {e}"))?;
+
+    std::fs::write(temp.join("model.onnx"), MODEL_BYTES)
+        .map_err(|e| format!("Failed to write model.onnx: {e}"))?;
+
+    for (name, bytes) in VOICES {
+        std::fs::write(temp.join(name), bytes)
+            .map_err(|e| format!("Failed to write {name}: {e}"))?;
+    }
+
+    let voice_dir = temp.to_string_lossy().into_owned();
+    let model_path = temp.join("model.onnx");
+    Ok((model_path, voice_dir))
+}
+
 impl KokoroBackend {
     /// Create the backend, loading the ONNX model.
     /// This is the heavy part (ONNX + CoreML init) — safe to call from a background thread.
     /// OutputStream is NOT created here (it requires the main thread on macOS).
     pub fn new() -> Result<Self, String> {
-        dotenvy::dotenv().ok();
+        // Load .env from workspace root (single source of truth).
+        // CARGO_MANIFEST_DIR is compile-time and always points to packages/desktop/.
+        let env_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.env");
+        dotenvy::from_path(&env_path).ok();
 
-        let model_dir = std::env::var("KOKORO_MODEL_DIR")
-            .map_err(|e| format!("KOKORO_MODEL_DIR not set: {e}"))?;
-        let voice_dir = std::env::var("KOKORO_VOICE_DIR")
-            .map_err(|e| format!("KOKORO_VOICE_DIR not set: {e}"))?;
-        let model_name =
-            std::env::var("KOKORO_MODEL").unwrap_or_else(|_| "model.onnx".to_string());
-        let voice = std::env::var("KOKORO_VOICE")
-            .unwrap_or_else(|_| "af_heart".to_string());
+        let voice = std::env::var("KOKORO_VOICE").unwrap_or_else(|_| "af_heart".to_string());
 
-        let model_path = std::path::PathBuf::from(&model_dir).join(&model_name);
-        if !model_path.exists() {
-            return Err(format!("Model file not found: {}", model_path.display()));
-        }
-        if !Path::new(&voice_dir).exists() {
-            return Err(format!("Voice directory not found: {voice_dir}"));
-        }
+        // Determine model and voice paths:
+        // - If KOKORO_MODEL_DIR is set, use custom paths from .env / environment
+        // - Otherwise, write embedded files to temp dir
+        let (model_path, voice_dir) = if std::env::var("KOKORO_MODEL_DIR").is_ok() {
+            let model_dir = std::env::var("KOKORO_MODEL_DIR").unwrap();
+            let voice_dir = std::env::var("KOKORO_VOICE_DIR")
+                .unwrap_or_else(|_| model_dir.clone());
+            let model_name = std::env::var("KOKORO_MODEL")
+                .unwrap_or_else(|_| "model.onnx".to_string());
+            let path = PathBuf::from(&model_dir).join(&model_name);
+            if !path.exists() {
+                return Err(format!("Model file not found: {}", path.display()));
+            }
+            (path, voice_dir)
+        } else {
+            write_embedded_to_temp()?
+        };
 
         // Temporary runtime for ONNX model loading (runs on spawn_blocking thread).
         let rt = tokio::runtime::Builder::new_current_thread()
