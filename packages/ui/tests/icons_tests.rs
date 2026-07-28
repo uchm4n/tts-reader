@@ -11,36 +11,48 @@ fn render_test(f: fn() -> Element) -> String {
 
 #[test]
 fn play_icon_renders() {
-    fn test_app() -> Element { rsx! { PlayIcon {} } }
+    fn test_app() -> Element {
+        rsx! { PlayIcon {} }
+    }
     assert!(!render_test(test_app).is_empty());
 }
 
 #[test]
 fn pause_icon_renders() {
-    fn test_app() -> Element { rsx! { PauseIcon {} } }
+    fn test_app() -> Element {
+        rsx! { PauseIcon {} }
+    }
     assert!(!render_test(test_app).is_empty());
 }
 
 #[test]
 fn stop_icon_renders() {
-    fn test_app() -> Element { rsx! { StopIcon {} } }
+    fn test_app() -> Element {
+        rsx! { StopIcon {} }
+    }
     assert!(!render_test(test_app).is_empty());
 }
 
 #[test]
 fn fast_backward_icon_renders() {
-    fn test_app() -> Element { rsx! { FastBackwardIcon {} } }
+    fn test_app() -> Element {
+        rsx! { FastBackwardIcon {} }
+    }
     assert!(!render_test(test_app).is_empty());
 }
 
 #[test]
 fn fast_forward_icon_renders() {
-    fn test_app() -> Element { rsx! { FastForwardIcon {} } }
+    fn test_app() -> Element {
+        rsx! { FastForwardIcon {} }
+    }
     assert!(!render_test(test_app).is_empty());
 }
 
 #[test]
 fn always_on_top_icon_renders() {
-    fn test_app() -> Element { rsx! { AlwaysOnTopIcon {} } }
+    fn test_app() -> Element {
+        rsx! { AlwaysOnTopIcon {} }
+    }
     assert!(!render_test(test_app).is_empty());
 }

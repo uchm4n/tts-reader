@@ -3,28 +3,29 @@
 use std::time::Duration;
 
 use dioxus::prelude::*;
-use dioxus_desktop::{use_global_shortcut, use_window, HotKeyState, Config, WindowBuilder, LogicalSize};
+use dioxus_desktop::{
+    use_global_shortcut, use_window, Config, HotKeyState, LogicalSize, WindowBuilder,
+};
 
 mod clipboard_monitor;
 mod tts_engine;
 
 use clipboard_monitor::use_clipboard_monitor;
 use tts_engine::TtsEngine;
-use ui::{PlayerBar, AlwaysOnTopEvent};
+use ui::{AlwaysOnTopEvent, PlayerBar};
 
 const APP_NAME: &str = "TTS Reader";
 
 fn main() {
     dioxus::LaunchBuilder::new()
         .with_cfg(
-            Config::new()
-                .with_window(
-                    WindowBuilder::new()
-                        .with_title(APP_NAME)
-                        .with_inner_size(LogicalSize::new(290.0, 48.0))
-                        .with_resizable(false)
-                        .with_always_on_top(false)
-                )
+            Config::new().with_window(
+                WindowBuilder::new()
+                    .with_title(APP_NAME)
+                    .with_inner_size(LogicalSize::new(290.0, 48.0))
+                    .with_resizable(false)
+                    .with_always_on_top(false),
+            ),
         )
         .launch(App);
 }
@@ -52,7 +53,8 @@ fn App() -> Element {
                 }
             }
         }
-    }).ok();
+    })
+    .ok();
 
     // Poll is_speaking() and reset is_playing when speech finishes
     spawn(async move {
@@ -93,18 +95,16 @@ fn App() -> Element {
         }
     };
 
-    let handle_always_on_top = move |event: AlwaysOnTopEvent| {
-        match event {
-            AlwaysOnTopEvent::HoverEnter => {
-                let state = if !is_always_on_top() { "On" } else { "Off" };
-                window.set_title(&format!("Always On Top: {state}"));
-            },
-            AlwaysOnTopEvent::HoverLeave => window.set_title(APP_NAME),
-            AlwaysOnTopEvent::Toggle => {
-                let new_state = !is_always_on_top();
-                window.set_always_on_top(new_state);
-                *is_always_on_top.write() = new_state;
-            }
+    let handle_always_on_top = move |event: AlwaysOnTopEvent| match event {
+        AlwaysOnTopEvent::HoverEnter => {
+            let state = if !is_always_on_top() { "On" } else { "Off" };
+            window.set_title(&format!("Always On Top: {state}"));
+        }
+        AlwaysOnTopEvent::HoverLeave => window.set_title(APP_NAME),
+        AlwaysOnTopEvent::Toggle => {
+            let new_state = !is_always_on_top();
+            window.set_always_on_top(new_state);
+            *is_always_on_top.write() = new_state;
         }
     };
 

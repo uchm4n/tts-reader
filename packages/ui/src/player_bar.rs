@@ -4,7 +4,9 @@
 
 use dioxus::prelude::*;
 
-use crate::icons::{FastBackwardIcon, FastForwardIcon, AlwaysOnTopIcon, PauseIcon, PlayIcon, StopIcon};
+use crate::icons::{
+    AlwaysOnTopIcon, FastBackwardIcon, FastForwardIcon, PauseIcon, PlayIcon, StopIcon,
+};
 use crate::AlwaysOnTopEvent;
 
 #[component]
@@ -20,7 +22,11 @@ pub fn PlayerBar(
     let speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
     let current_speed = speed();
 
-    let prev_speed = speeds.iter().rev().find(|&&s| s < current_speed - 0.01).copied();
+    let prev_speed = speeds
+        .iter()
+        .rev()
+        .find(|&&s| s < current_speed - 0.01)
+        .copied();
     let next_speed = speeds.iter().find(|&&s| s > current_speed + 0.01).copied();
 
     rsx! {
