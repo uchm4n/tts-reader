@@ -40,7 +40,7 @@ fn fast_forward_icon_renders() {
 }
 
 #[test]
-fn info_icon_renders() {
-    fn test_app() -> Element { rsx! { InfoIcon {} } }
+fn always_on_top_icon_renders() {
+    fn test_app() -> Element { rsx! { AlwaysOnTopIcon {} } }
     assert!(!render_test(test_app).is_empty());
 }

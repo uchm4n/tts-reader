@@ -4,3 +4,10 @@ pub mod icons;
 pub mod player_bar;
 
 pub use player_bar::PlayerBar;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AlwaysOnTopEvent {
+    HoverEnter,
+    HoverLeave,
+    Toggle,
+}

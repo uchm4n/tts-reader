@@ -84,7 +84,7 @@ pub fn FastForwardIcon() -> Element {
     }
 }
 
-pub fn InfoIcon() -> Element {
+pub fn AlwaysOnTopIcon() -> Element {
     rsx! {
         svg {
             width: "24",
@@ -93,7 +93,7 @@ pub fn InfoIcon() -> Element {
             fill: "none",
             xmlns: "http://www.w3.org/2000/svg",
             path {
-                d: "M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10Zm-1-11v6h2v-6h-2Zm0-4v2h2V7h-2Z",
+                d: "M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z",
                 fill: "currentColor",
             }
         }

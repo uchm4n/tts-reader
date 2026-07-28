@@ -4,15 +4,18 @@
 
 use dioxus::prelude::*;
 
-use crate::icons::{FastBackwardIcon, FastForwardIcon, InfoIcon, PauseIcon, PlayIcon, StopIcon};
+use crate::icons::{FastBackwardIcon, FastForwardIcon, AlwaysOnTopIcon, PauseIcon, PlayIcon, StopIcon};
+use crate::AlwaysOnTopEvent;
 
 #[component]
 pub fn PlayerBar(
     is_playing: Signal<bool>,
     speed: Signal<f32>,
+    is_always_on_top: Signal<bool>,
     on_play: EventHandler<()>,
     on_stop: EventHandler<()>,
-    on_info_hover: EventHandler<bool>,
+    on_always_on_top: EventHandler<AlwaysOnTopEvent>,
+    on_play_pause_hover: EventHandler<bool>,
 ) -> Element {
     let speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
     let current_speed = speed();
@@ -37,6 +40,8 @@ pub fn PlayerBar(
                 class: "icon-btn play",
                 title: if is_playing() { "Pause" } else { "Play" },
                 onclick: move |_| on_play.call(()),
+                onmouseenter: move |_| on_play_pause_hover.call(true),
+                onmouseleave: move |_| on_play_pause_hover.call(false),
                 if is_playing() {
                     PauseIcon {}
                 } else {
@@ -64,10 +69,12 @@ pub fn PlayerBar(
                 "{current_speed:.2}x"
             }
             button {
-                class: "icon-btn info-btn",
-                onmouseenter: move |_| on_info_hover.call(true),
-                onmouseleave: move |_| on_info_hover.call(false),
-                InfoIcon {}
+                class: if is_always_on_top() { "icon-btn always-on-top-btn active" } else { "icon-btn always-on-top-btn" },
+                title: if is_always_on_top() { "Always On Top: On" } else { "Always On Top: Off" },
+                onmouseenter: move |_| on_always_on_top.call(AlwaysOnTopEvent::HoverEnter),
+                onmouseleave: move |_| on_always_on_top.call(AlwaysOnTopEvent::HoverLeave),
+                onclick: move |_| on_always_on_top.call(AlwaysOnTopEvent::Toggle),
+                AlwaysOnTopIcon {}
             }
         }
     }

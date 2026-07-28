@@ -10,7 +10,9 @@ mod tts_engine;
 
 use clipboard_monitor::use_clipboard_monitor;
 use tts_engine::TtsEngine;
-use ui::PlayerBar;
+use ui::{PlayerBar, AlwaysOnTopEvent};
+
+const APP_NAME: &str = "TTS Reader";
 
 fn main() {
     dioxus::LaunchBuilder::new()
@@ -18,9 +20,10 @@ fn main() {
             Config::new()
                 .with_window(
                     WindowBuilder::new()
-                        .with_title("TTS Reader")
+                        .with_title(APP_NAME)
                         .with_inner_size(LogicalSize::new(290.0, 48.0))
                         .with_resizable(false)
+                        .with_always_on_top(false)
                 )
         )
         .launch(App);
@@ -33,6 +36,7 @@ fn App() -> Element {
     let mut tts = use_signal(|| TtsEngine::new());
     let clipboard_text = use_clipboard_monitor();
     let window = use_window();
+    let mut is_always_on_top = use_signal(|| false);
 
     // Global shortcut: Cmd+Shift+R to toggle play/pause
     use_global_shortcut("Cmd+Shift+R", move |state| {
@@ -78,11 +82,29 @@ fn App() -> Element {
         *is_playing.write() = false;
     };
 
-    let handle_info_hover = move |hovering: bool| {
-        if hovering {
-            window.set_title("Cmd+Shift+R: Play/Pause");
-        } else {
-            window.set_title("TTS Reader");
+    let handle_play_pause_hover = {
+        let window = window.clone();
+        move |hovering: bool| {
+            if hovering {
+                window.set_title("⌘+⇧+R: Play/Pause");
+            } else {
+                window.set_title(APP_NAME);
+            }
+        }
+    };
+
+    let handle_always_on_top = move |event: AlwaysOnTopEvent| {
+        match event {
+            AlwaysOnTopEvent::HoverEnter => {
+                let state = if !is_always_on_top() { "On" } else { "Off" };
+                window.set_title(&format!("Always On Top: {state}"));
+            },
+            AlwaysOnTopEvent::HoverLeave => window.set_title(APP_NAME),
+            AlwaysOnTopEvent::Toggle => {
+                let new_state = !is_always_on_top();
+                window.set_always_on_top(new_state);
+                *is_always_on_top.write() = new_state;
+            }
         }
     };
 
@@ -95,9 +117,11 @@ fn App() -> Element {
             PlayerBar {
                 is_playing,
                 speed,
+                is_always_on_top,
                 on_play: handle_play,
                 on_stop: handle_stop,
-                on_info_hover: handle_info_hover,
+                on_always_on_top: handle_always_on_top,
+                on_play_pause_hover: handle_play_pause_hover,
             }
         }
     }

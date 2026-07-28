@@ -104,7 +104,17 @@ body {
     margin-left: 4px;
 }
 
-/* Info Button */
-.info-btn {
+/* Always On Top Button */
+.always-on-top-btn {
     margin-left: 8px;
+}
+
+.always-on-top-btn.active {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-color: hsl(var(--primary));
+}
+
+.always-on-top-btn.active:hover {
+    background-color: hsl(240 5.9% 20%);
 }
