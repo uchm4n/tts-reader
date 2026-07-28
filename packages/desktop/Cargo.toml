@@ -6,7 +6,12 @@ edition = "2021"
 [dependencies]
 dioxus = { workspace = true, features = ["desktop"] }
 dioxus-desktop = { workspace = true }
-tokio = { version = "1", features = ["time"] }
+kokoro-en = { version = "0.1.4", default-features = false }
+ort = { version = "2.0.0-rc.11", features = ["coreml"] }
+ort-sys = { version = "2.0.0-rc.11", features = ["lax-feature-matching"] }
+rodio = "0.20"
+dotenvy = "0.15"
+tokio = { version = "1", features = ["time", "rt-multi-thread"] }
 ui = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]

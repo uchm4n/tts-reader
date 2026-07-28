@@ -1,12 +1,12 @@
-//! TTS engine using macOS `say` command.
+//! macOS `say` command backend.
 
 use std::process::{Child, Command, Stdio};
 
-pub struct TtsEngine {
+pub struct SayBackend {
     process: Option<Child>,
 }
 
-impl TtsEngine {
+impl SayBackend {
     pub fn new() -> Self {
         Self { process: None }
     }
@@ -27,7 +27,7 @@ impl TtsEngine {
                 self.process = Some(child);
             }
             Err(e) => {
-                eprintln!("Failed to start TTS: {}", e);
+                eprintln!("[TTS] Failed to start say command: {}", e);
             }
         }
     }
@@ -58,7 +58,13 @@ impl TtsEngine {
     }
 }
 
-impl Drop for TtsEngine {
+impl Default for SayBackend {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Drop for SayBackend {
     fn drop(&mut self) {
         self.stop();
     }

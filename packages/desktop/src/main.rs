@@ -48,7 +48,7 @@ fn main() {
 fn App() -> Element {
     let mut is_playing = use_signal(|| false);
     let speed = use_signal(|| 1.0);
-    let mut tts = use_signal(|| TtsEngine::new());
+    let mut tts = use_signal(|| None::<TtsEngine>);
     let clipboard_text = use_clipboard_monitor();
     let window = use_window();
     let mut is_always_on_top = use_signal(|| false);
@@ -66,17 +66,35 @@ fn App() -> Element {
         }
     });
 
+    // Initialize TTS engine on a background thread to avoid blocking the webview
+    spawn(async move {
+        let engine = tokio::task::spawn_blocking(TtsEngine::new).await;
+        match engine {
+            Ok(engine) => {
+                eprintln!("[TTS] Engine initialized");
+                *tts.write() = Some(engine);
+            }
+            Err(e) => {
+                eprintln!("[TTS] Engine init failed: {e}");
+            }
+        }
+    });
+
     // Global shortcut: Cmd+Shift+R to toggle play/pause
     use_global_shortcut("Cmd+Shift+R", move |state| {
         if let HotKeyState::Pressed = state {
             if is_playing() {
-                tts.write().stop();
+                if let Some(ref mut engine) = *tts.write() {
+                    engine.stop();
+                }
                 *is_playing.write() = false;
             } else {
                 let text = get_text_for_playback(selector.as_ref(), &clipboard_text());
                 if !text.is_empty() {
-                    tts.write().speak(&text, speed());
-                    *is_playing.write() = true;
+                    if let Some(ref mut engine) = *tts.write() {
+                        engine.speak(&text, speed());
+                        *is_playing.write() = true;
+                    }
                 }
             }
         }
@@ -87,8 +105,14 @@ fn App() -> Element {
     spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_millis(100)).await;
-            if is_playing() && !tts.write().is_speaking() {
-                *is_playing.write() = false;
+            if is_playing() {
+                let speaking = tts
+                    .write()
+                    .as_mut()
+                    .map_or(false, |engine| engine.is_speaking());
+                if !speaking {
+                    *is_playing.write() = false;
+                }
             }
         }
     });
@@ -96,19 +120,25 @@ fn App() -> Element {
     let selector_play = create_text_selector();
     let handle_play = move |_| {
         if is_playing() {
-            tts.write().stop();
+            if let Some(ref mut engine) = *tts.write() {
+                engine.stop();
+            }
             *is_playing.write() = false;
         } else {
             let text = get_text_for_playback(selector_play.as_ref(), &clipboard_text());
             if !text.is_empty() {
-                tts.write().speak(&text, speed());
-                *is_playing.write() = true;
+                if let Some(ref mut engine) = *tts.write() {
+                    engine.speak(&text, speed());
+                    *is_playing.write() = true;
+                }
             }
         }
     };
 
     let handle_stop = move |_| {
-        tts.write().stop();
+        if let Some(ref mut engine) = *tts.write() {
+            engine.stop();
+        }
         *is_playing.write() = false;
     };
 
