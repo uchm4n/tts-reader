@@ -9,12 +9,26 @@ use dioxus_desktop::{
 
 mod clipboard_monitor;
 mod tts_engine;
+mod text_selector;
 
 use clipboard_monitor::use_clipboard_monitor;
 use tts_engine::TtsEngine;
+use text_selector::create_text_selector;
+use text_selector::is_text_selection_available;
 use ui::{AlwaysOnTopEvent, PlayerBar};
 
 const APP_NAME: &str = "TTS Reader";
+
+/// Get text for playback: try selected text first, fall back to clipboard.
+fn get_text_for_playback(
+    selector: &dyn text_selector::TextSelector,
+    clipboard_text: &str,
+) -> String {
+    selector
+        .get_selected_text()
+        .filter(|t| !t.is_empty())
+        .unwrap_or_else(|| clipboard_text.to_string())
+}
 
 fn main() {
     dioxus::LaunchBuilder::new()
@@ -38,6 +52,19 @@ fn App() -> Element {
     let clipboard_text = use_clipboard_monitor();
     let window = use_window();
     let mut is_always_on_top = use_signal(|| false);
+    let selector = create_text_selector();
+
+    // One-time warning if accessibility permissions are not granted
+    use_effect(move || {
+        if !is_text_selection_available() {
+            eprintln!(
+                "[TTS Reader] Accessibility permissions not granted.\n\
+                 Selected text reading is disabled. The app will use clipboard text instead.\n\
+                 To enable: System Settings → Privacy & Security → Accessibility → add this app.\n\
+                 Then restart the app."
+            );
+        }
+    });
 
     // Global shortcut: Cmd+Shift+R to toggle play/pause
     use_global_shortcut("Cmd+Shift+R", move |state| {
@@ -46,7 +73,7 @@ fn App() -> Element {
                 tts.write().stop();
                 *is_playing.write() = false;
             } else {
-                let text = clipboard_text();
+                let text = get_text_for_playback(selector.as_ref(), &clipboard_text());
                 if !text.is_empty() {
                     tts.write().speak(&text, speed());
                     *is_playing.write() = true;
@@ -66,12 +93,13 @@ fn App() -> Element {
         }
     });
 
+    let selector_play = create_text_selector();
     let handle_play = move |_| {
         if is_playing() {
             tts.write().stop();
             *is_playing.write() = false;
         } else {
-            let text = clipboard_text();
+            let text = get_text_for_playback(selector_play.as_ref(), &clipboard_text());
             if !text.is_empty() {
                 tts.write().speak(&text, speed());
                 *is_playing.write() = true;

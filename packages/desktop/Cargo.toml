@@ -9,5 +9,8 @@ dioxus-desktop = { workspace = true }
 tokio = { version = "1", features = ["time"] }
 ui = { workspace = true }
 
+[target.'cfg(target_os = "macos")'.dependencies]
+axuielement = "0.9"
+
 [features]
 default = []
