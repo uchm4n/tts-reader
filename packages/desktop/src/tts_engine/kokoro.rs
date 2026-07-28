@@ -1,6 +1,7 @@
 //! Kokoro TTS backend using kokoro-en crate.
 
 use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 use kokoro_en::{KokoroTts, Voice};
 use rodio::buffer::SamplesBuffer;
@@ -12,17 +13,16 @@ struct AudioState {
 }
 
 pub struct KokoroBackend {
-    tts: KokoroTts,
+    tts: Arc<Mutex<KokoroTts>>,
     voice: String,
-    rt: tokio::runtime::Runtime,
     /// Heap-allocated audio state, managed via raw pointer.
     /// AudioState contains rodio::OutputStream which is !Send on macOS,
     /// but TtsEngine is only accessed from the main thread, so this is safe.
     audio: *mut Option<AudioState>,
 }
 
-// Safety: KokoroBackend is only accessed from the main thread.
-// The raw pointer to AudioState is only read/written on the main thread.
+// Safety: KokoroBackend is only ever accessed from the main thread.
+// The raw pointer to AudioState is only created, read, and dropped on the main thread.
 unsafe impl Send for KokoroBackend {}
 
 impl KokoroBackend {
@@ -49,6 +49,7 @@ impl KokoroBackend {
             return Err(format!("Voice directory not found: {voice_dir}"));
         }
 
+        // Temporary runtime for ONNX model loading (runs on spawn_blocking thread).
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -59,13 +60,13 @@ impl KokoroBackend {
                 .await
                 .map_err(|e| format!("KokoroTts init failed: {e}"))
         })?;
+        drop(rt);
 
         let audio = Box::into_raw(Box::new(None::<AudioState>));
 
         Ok(Self {
-            tts,
+            tts: Arc::new(Mutex::new(tts)),
             voice,
-            rt,
             audio,
         })
     }
@@ -100,14 +101,31 @@ impl KokoroBackend {
             return;
         }
 
+        let tts = self.tts.clone();
         let voice = self.voice.clone();
-        let samples = self.rt.block_on(async {
-            self.tts
-                .synth(text, Voice::new(&voice).with_speed(rate))
-                .await
-                .ok()
-                .map(|(samples, _)| samples)
+        let text = text.to_string();
+
+        // Spawn synthesis on a background thread with its own tokio runtime.
+        // This avoids "Cannot start a runtime from within a runtime" panics
+        // when called from within Dioxus's async context.
+        let handle = std::thread::spawn(move || -> Result<Vec<f32>, String> {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|e| format!("Failed to create runtime: {e}"))?;
+            rt.block_on(async {
+                let tts = tts.lock().map_err(|e| format!("Lock failed: {e}"))?;
+                tts.synth(&text, Voice::new(&voice).with_speed(rate))
+                    .await
+                    .map(|(samples, _)| samples)
+                    .map_err(|e| format!("Synth failed: {e}"))
+            })
         });
+
+        let samples = handle
+            .join()
+            .unwrap_or_else(|_| Err("Synthesis thread panicked".into()))
+            .ok();
 
         if let Some(samples) = samples {
             // Safety: self.audio is a valid Box pointer, only accessed from main thread.

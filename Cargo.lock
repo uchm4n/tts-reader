@@ -2484,8 +2484,6 @@ dependencies = [
 [[package]]
 name = "kokoro-en"
 version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "408c9287c27a7550b19931cbf7524f64cfcb2752e746a6fff0037b514c9df1fb"
 dependencies = [
  "bincode",
  "cc",
