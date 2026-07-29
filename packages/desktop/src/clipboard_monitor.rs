@@ -1,4 +1,4 @@
-//! Clipboard monitoring using pbpaste command.
+//! Clipboard monitoring using platform-specific commands.
 
 use std::process::Command;
 use std::time::Duration;
@@ -26,8 +26,39 @@ pub fn use_clipboard_monitor() -> Signal<String> {
 }
 
 fn get_clipboard_text() -> String {
-    Command::new("pbpaste")
-        .output()
-        .map(|output| String::from_utf8_lossy(&output.stdout).to_string())
-        .unwrap_or_default()
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("pbpaste")
+            .output()
+            .map(|output| String::from_utf8_lossy(&output.stdout).to_string())
+            .unwrap_or_default()
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xclip")
+            .args(["-selection", "clipboard", "-o"])
+            .output()
+            .or_else(|_| {
+                Command::new("xsel")
+                    .args(["--clipboard", "--output"])
+                    .output()
+            })
+            .map(|output| String::from_utf8_lossy(&output.stdout).to_string())
+            .unwrap_or_default()
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("powershell")
+            .args(["-command", "Get-Clipboard"])
+            .output()
+            .map(|output| String::from_utf8_lossy(&output.stdout).to_string())
+            .unwrap_or_default()
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+    {
+        String::new()
+    }
 }
