@@ -278,22 +278,30 @@ A minimalistic macOS desktop application that reads text aloud from the system c
 dioxus/
 ├── Cargo.toml                    # Workspace root
 ├── AGENTS.md                     # This file
+├── .env                          # Voice config (KOKORO_VOICE)
 ├── docs/superpowers/specs/       # Design specs
 └── packages/
+    ├── kokoro/                   # Local patched kokoro-en crate
     ├── ui/                       # Shared UI components
     │   ├── Cargo.toml
     │   └── src/
     │       ├── lib.rs            # Component exports
     │       ├── icons.rs          # SVG icons (Play, Pause, Stop, FastBackward, FastForward)
-    │       └── player_bar.rs     # Player toolbar component
+    │       ├── voices.rs         # Voice list constant + label helper
+    │       └── player_bar.rs     # Player toolbar + voice selector
     └── desktop/                  # Desktop application
         ├── Cargo.toml
         ├── assets/
         │   └── main.css          # Shadcn-inspired light theme
         └── src/
             ├── main.rs           # App entry point + state management
-            ├── tts_engine.rs     # macOS `say` command wrapper
-            └── clipboard_monitor.rs  # Clipboard polling via `pbpaste`
+            ├── tts_engine/       # Directory module
+            │   ├── mod.rs        # Re-exports TtsEngine
+            │   ├── backend.rs    # TtsEngine public API + Backend enum
+            │   ├── kokoro.rs     # Kokoro ONNX backend (primary)
+            │   └── say.rs        # macOS `say` command (fallback)
+            ├── clipboard_monitor.rs  # Clipboard polling via `pbpaste`
+            └── text_selector.rs  # Accessibility-based text selection
 ```
 
 ## Workspace Configuration
@@ -321,29 +329,43 @@ ui = { path = "packages/ui" }
 - Updates the UI signal for playback
 
 ### 2. Text-to-Speech
-- Uses macOS `say` command for speech synthesis
+- **Primary**: Kokoro ONNX neural TTS model (82M params) for natural-sounding speech
+- **Fallback**: macOS `say` command when Kokoro unavailable
 - Configurable speech rate (0.5x to 2.0x)
 - Supports pause/resume functionality
 
-### 3. Playback Controls
+### 3. Voice Selection
+- 28 English voices (American/British, male/female)
+- Runtime voice switching via dropdown selector
+- Labels show "Name (Nationality + Gender)" format
+- Default voice configurable via `.env` file
+
+### 4. Playback Controls
 - **Play/Pause** - Toggle speech playback
 - **Stop** - Stop playback completely
 - **Speed Down** (<<) - Decrease speech rate
 - **Speed Up** (>>) - Increase speech rate
 - **Speed Label** - Display current speed (e.g., "1.00x")
 
-### 4. Global Keyboard Shortcut
+### 5. Global Keyboard Shortcut
 - **Cmd+Shift+R** - Toggle play/pause from anywhere
 - Works even when app is not focused
 - Requires accessibility permissions on macOS
 
+### 6. Self-Contained Binary
+- ONNX model (310MB) embedded via `include_bytes!`
+- 52 voice files embedded for all supported languages
+- No external files needed at runtime
+- Falls back to temp directory extraction
+
 ## UI Layout
 
 ```
-[<<] [▶/⏸] [⏹] [>>] 1.00x
+[<<] [▶/⏸] [⏹] [>>] 1.00x [📌]
+[▼ Heart (American Female)          ]
 ```
 
-- Minimalistic 260x48px window
+- Minimalistic 290x80px window
 - Light theme with shadcn-inspired styling
 - Non-resizable, always on top (optional)
 - No borders or decorations
@@ -357,29 +379,35 @@ ui = { path = "packages/ui" }
 pub fn PlayerBar(
     is_playing: Signal<bool>,
     speed: Signal<f32>,
+    voice: Signal<String>,
+    is_always_on_top: Signal<bool>,
     on_play: EventHandler<()>,
     on_stop: EventHandler<()>,
+    on_voice_change: EventHandler<String>,
+    on_always_on_top: EventHandler<AlwaysOnTopEvent>,
+    on_play_pause_hover: EventHandler<bool>,
 ) -> Element
 ```
 
-Renders the playback controls with speed adjustment buttons.
+Renders the playback controls with speed adjustment buttons and voice selector dropdown.
 
 ### TtsEngine (`packages/desktop/src/tts_engine.rs`)
 
 ```rust
 pub struct TtsEngine {
-    process: Option<Child>,
+    backend: Backend,
 }
 
 impl TtsEngine {
-    pub fn new() -> Self;
+    pub fn new() -> Self;           // Tries Kokoro, falls back to say
     pub fn speak(&mut self, text: &str, rate: f32);
     pub fn stop(&mut self);
     pub fn is_speaking(&mut self) -> bool;
+    pub fn set_voice(&mut self, voice: &str);
 }
 ```
 
-Wraps the macOS `say` command for text-to-speech synthesis.
+Enum strategy: `Backend::Kokoro` | `Backend::Say` with silent fallback. Voice changes take effect on next `speak()` call.
 
 ### ClipboardMonitor (`packages/desktop/src/clipboard_monitor.rs`)
 
@@ -396,7 +424,8 @@ All state lives in `main.rs`:
 ```rust
 let mut is_playing = use_signal(|| false);  // Playback state
 let speed = use_signal(|| 1.0);             // Speech rate
-let mut tts = use_signal(|| TtsEngine::new());  // TTS engine
+let mut voice = use_signal(|| std::env::var("KOKORO_VOICE").unwrap_or_else(|_| "af_heart".to_string()));
+let mut tts = use_signal(|| None::<TtsEngine>);  // TTS engine
 let clipboard_text = use_clipboard_monitor();   // Clipboard text
 ```
 
@@ -409,6 +438,11 @@ dioxus = { version = "0.7.1", features = ["desktop"] }
 dioxus-desktop = { version = "0.7.1" }
 tokio = { version = "1", features = ["time"] }
 ui = { path = "../ui" }
+kokoro-en = { version = "0.1.4", default-features = false }
+rodio = "0.20"
+ort = { version = "2.0", features = ["coreml"] }
+ort-sys = { version = "2.0", features = ["lax-feature-matching"] }
+dotenvy = "5"
 ```
 
 ## Building & Running
@@ -427,11 +461,12 @@ dx build --release
 
 ## Design Decisions
 
-### Why macOS `say` command?
-- No extra dependencies
-- Works out of the box on macOS
-- Simple to implement via `std::process::Command`
-- Can be replaced with NSSpeechSynthesizer FFI later for more control
+### Why Kokoro TTS?
+- Open-weight neural model (82M params) for natural-sounding speech
+- 28 English voices with different accents and genders
+- ONNX runtime with CoreML acceleration on macOS
+- Embedded in binary for self-contained distribution
+- Falls back to `say` command on failure
 
 ### Why clipboard polling?
 - Simplicity - no need for accessibility APIs
@@ -442,6 +477,32 @@ dx build --release
 - Minimalist design - only shows what's needed
 - Doesn't obscure the text being read
 - Fast to appear/disappear
+
+## Kokoro TTS Backend
+
+The Kokoro backend uses the `kokoro-en` crate with ONNX runtime for neural text-to-speech synthesis.
+
+### Architecture
+- Model loaded via `ort` with CoreML execution provider
+- 52 voice files embedded via `include_bytes!`
+- Background thread synthesis to avoid runtime nesting
+- `Arc<Mutex<KokoroTts>>` for thread-safe access
+- Rodio for audio output with lazy initialization
+
+### Configuration
+Single `.env` file at workspace root:
+```env
+KOKORO_VOICE=af_heart                    # Default voice
+# KOKORO_MODEL_DIR=/path/to/models       # Optional: override model path
+# KOKORO_VOICE_DIR=/path/to/voices       # Optional: override voice dir
+```
+
+### Voice List
+28 English voices available:
+- **American Female**: Heart, Alloy, Aoede, Bella, Jessica, Kore, Nicole, Nova, River, Sarah, Sky
+- **American Male**: Adam, Echo, Eric, Fenrir, Liam, Michael, Onyx, Puck, Santa
+- **British Female**: Alice, Emma, Isabella, Lily
+- **British Male**: Daniel, Fable, George, Lewis
 
 ## Future Improvements
 
@@ -482,7 +543,7 @@ dx build --release
 1. **Test TTS independently**: Run `say -r 200 "Hello World"` in Terminal
 2. **Test clipboard**: Run `pbpaste` to see current clipboard content
 3. **Check Dioxus logs**: Use `dx serve --verbose` for detailed logging
-4. **Modify window size**: Update `LogicalSize::new(260.0, 48.0)` in `main.rs`
+4. **Modify window size**: Update `LogicalSize::new(290.0, 80.0)` in `main.rs`
 
 ## Architecture Notes
 

@@ -6,10 +6,13 @@ A minimalistic macOS desktop application that reads text aloud from the system c
 
 ## Features
 
+- **Kokoro TTS Engine** - Open-weight neural TTS model (82M params) for natural-sounding speech
+- **28 English Voices** - American/British, male/female, selectable at runtime
 - **Clipboard Monitoring** - Automatically detects when you copy text
-- **Text-to-Speech** - Reads clipboard text aloud using macOS `say` command
 - **Global Shortcut** - Press `Cmd+Shift+R` to play/pause from anywhere
 - **Speed Control** - Adjustable speech rate (0.5x to 2.0x)
+- **Voice Selection** - Choose from 28 voices in the dropdown below controls
+- **Self-Contained** - Model and voices embedded in the binary, no external files needed
 - **Minimal UI** - Tiny floating player that doesn't get in the way
 
 
@@ -28,7 +31,8 @@ Just open the `.dmg` file and drag the app to your Applications folder.
 1. **Copy text** anywhere on your Mac (select text + `Cmd+C`)
 2. **Click Play** or press `Cmd+Shift+R` to start listening
 3. **Adjust speed** with the `<<` and `>>` buttons
-4. **Click Stop** to stop playback
+4. **Select Voice** - Choose from 28 voices in the dropdown below the controls
+5. **Click Stop** to stop playback
 
 ## Building from Source
 
@@ -58,7 +62,7 @@ cd packages/desktop && cargo run
 ### Production Build
 
 ```bash
-# Build release binary
+# Build release binary (includes embedded model, ~310MB)
 cargo build --release
 
 # Or create a .app bundle
@@ -72,8 +76,27 @@ dx bundle --platform macos --package-types dmg
 
 - [Dioxus 0.7](https://dioxuslabs.com/) - Cross-platform UI framework
 - [Tokio](https://tokio.rs/) - Async runtime
-- macOS `say` command - Text-to-speech synthesis
+- [Kokoro TTS](https://github.com/hexgrad/kokoro) - Open-weight neural TTS model
+- [ort](https://github.com/pykeio/ort) - ONNX Runtime for model inference
+- [rodio](https://github.com/RustAudio/rodio) - Audio playback
+- macOS `say` command - Fallback TTS
 - `pbpaste` - Clipboard monitoring
+
+## Voice Configuration
+
+The default voice can be configured via a `.env` file in the project root:
+
+```env
+KOKORO_VOICE=af_heart                    # Default voice (American Female)
+# KOKORO_MODEL_DIR=/path/to/models       # Optional: override model path
+# KOKORO_VOICE_DIR=/path/to/voices       # Optional: override voice dir
+```
+
+Available voices:
+- **American Female**: Heart, Alloy, Aoede, Bella, Jessica, Kore, Nicole, Nova, River, Sarah, Sky
+- **American Male**: Adam, Echo, Eric, Fenrir, Liam, Michael, Onyx, Puck, Santa
+- **British Female**: Alice, Emma, Isabella, Lily
+- **British Male**: Daniel, Fable, George, Lewis
 
 ## License
 
