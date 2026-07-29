@@ -39,6 +39,10 @@ impl SayBackend {
         }
     }
 
+    pub fn set_voice(&mut self, _voice: &str) {
+        // say backend doesn't support voice selection
+    }
+
     pub fn is_speaking(&mut self) -> bool {
         if let Some(ref mut child) = self.process {
             match child.try_wait() {

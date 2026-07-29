@@ -11,8 +11,59 @@ use rodio::{OutputStream, Sink};
 // Users can override via KOKORO_MODEL_DIR / KOKORO_VOICE_DIR env vars.
 const MODEL_BYTES: &[u8] = include_bytes!("../../../../packages/kokoro/models/model.onnx");
 const VOICES: &[(&str, &[u8])] = &[
+    ("af_alloy.bin", include_bytes!("../../../../packages/kokoro/voices/af_alloy.bin")),
+    ("af_aoede.bin", include_bytes!("../../../../packages/kokoro/voices/af_aoede.bin")),
+    ("af_bella.bin", include_bytes!("../../../../packages/kokoro/voices/af_bella.bin")),
     ("af_heart.bin", include_bytes!("../../../../packages/kokoro/voices/af_heart.bin")),
+    ("af_jessica.bin", include_bytes!("../../../../packages/kokoro/voices/af_jessica.bin")),
+    ("af_kore.bin", include_bytes!("../../../../packages/kokoro/voices/af_kore.bin")),
+    ("af_nicole.bin", include_bytes!("../../../../packages/kokoro/voices/af_nicole.bin")),
+    ("af_nova.bin", include_bytes!("../../../../packages/kokoro/voices/af_nova.bin")),
+    ("af_river.bin", include_bytes!("../../../../packages/kokoro/voices/af_river.bin")),
+    ("af_sarah.bin", include_bytes!("../../../../packages/kokoro/voices/af_sarah.bin")),
+    ("af_sky.bin", include_bytes!("../../../../packages/kokoro/voices/af_sky.bin")),
     ("am_adam.bin", include_bytes!("../../../../packages/kokoro/voices/am_adam.bin")),
+    ("am_echo.bin", include_bytes!("../../../../packages/kokoro/voices/am_echo.bin")),
+    ("am_eric.bin", include_bytes!("../../../../packages/kokoro/voices/am_eric.bin")),
+    ("am_fenrir.bin", include_bytes!("../../../../packages/kokoro/voices/am_fenrir.bin")),
+    ("am_liam.bin", include_bytes!("../../../../packages/kokoro/voices/am_liam.bin")),
+    ("am_michael.bin", include_bytes!("../../../../packages/kokoro/voices/am_michael.bin")),
+    ("am_onyx.bin", include_bytes!("../../../../packages/kokoro/voices/am_onyx.bin")),
+    ("am_puck.bin", include_bytes!("../../../../packages/kokoro/voices/am_puck.bin")),
+    ("am_santa.bin", include_bytes!("../../../../packages/kokoro/voices/am_santa.bin")),
+    ("bf_alice.bin", include_bytes!("../../../../packages/kokoro/voices/bf_alice.bin")),
+    ("bf_emma.bin", include_bytes!("../../../../packages/kokoro/voices/bf_emma.bin")),
+    ("bf_isabella.bin", include_bytes!("../../../../packages/kokoro/voices/bf_isabella.bin")),
+    ("bf_lily.bin", include_bytes!("../../../../packages/kokoro/voices/bf_lily.bin")),
+    ("bm_daniel.bin", include_bytes!("../../../../packages/kokoro/voices/bm_daniel.bin")),
+    ("bm_fable.bin", include_bytes!("../../../../packages/kokoro/voices/bm_fable.bin")),
+    ("bm_george.bin", include_bytes!("../../../../packages/kokoro/voices/bm_george.bin")),
+    ("bm_lewis.bin", include_bytes!("../../../../packages/kokoro/voices/bm_lewis.bin")),
+    ("ef_dora.bin", include_bytes!("../../../../packages/kokoro/voices/ef_dora.bin")),
+    ("em_alex.bin", include_bytes!("../../../../packages/kokoro/voices/em_alex.bin")),
+    ("em_santa.bin", include_bytes!("../../../../packages/kokoro/voices/em_santa.bin")),
+    ("ff_siwis.bin", include_bytes!("../../../../packages/kokoro/voices/ff_siwis.bin")),
+    ("hf_alpha.bin", include_bytes!("../../../../packages/kokoro/voices/hf_alpha.bin")),
+    ("hf_beta.bin", include_bytes!("../../../../packages/kokoro/voices/hf_beta.bin")),
+    ("hm_omega.bin", include_bytes!("../../../../packages/kokoro/voices/hm_omega.bin")),
+    ("hm_psi.bin", include_bytes!("../../../../packages/kokoro/voices/hm_psi.bin")),
+    ("if_sara.bin", include_bytes!("../../../../packages/kokoro/voices/if_sara.bin")),
+    ("im_nicola.bin", include_bytes!("../../../../packages/kokoro/voices/im_nicola.bin")),
+    ("jf_alpha.bin", include_bytes!("../../../../packages/kokoro/voices/jf_alpha.bin")),
+    ("jf_gongitsune.bin", include_bytes!("../../../../packages/kokoro/voices/jf_gongitsune.bin")),
+    ("jf_nezumi.bin", include_bytes!("../../../../packages/kokoro/voices/jf_nezumi.bin")),
+    ("jf_tebukuro.bin", include_bytes!("../../../../packages/kokoro/voices/jf_tebukuro.bin")),
+    ("jm_kumo.bin", include_bytes!("../../../../packages/kokoro/voices/jm_kumo.bin")),
+    ("pf_dora.bin", include_bytes!("../../../../packages/kokoro/voices/pf_dora.bin")),
+    ("pm_alex.bin", include_bytes!("../../../../packages/kokoro/voices/pm_alex.bin")),
+    ("pm_santa.bin", include_bytes!("../../../../packages/kokoro/voices/pm_santa.bin")),
+    ("zf_xiaobei.bin", include_bytes!("../../../../packages/kokoro/voices/zf_xiaobei.bin")),
+    ("zf_xiaoni.bin", include_bytes!("../../../../packages/kokoro/voices/zf_xiaoni.bin")),
+    ("zf_xiaoxiao.bin", include_bytes!("../../../../packages/kokoro/voices/zf_xiaoxiao.bin")),
+    ("zm_yunjian.bin", include_bytes!("../../../../packages/kokoro/voices/zm_yunjian.bin")),
+    ("zm_yunxi.bin", include_bytes!("../../../../packages/kokoro/voices/zm_yunxi.bin")),
+    ("zm_yunxia.bin", include_bytes!("../../../../packages/kokoro/voices/zm_yunxia.bin")),
+    ("zm_yunyang.bin", include_bytes!("../../../../packages/kokoro/voices/zm_yunyang.bin")),
 ];
 
 struct AudioState {
@@ -178,6 +229,10 @@ impl KokoroBackend {
         if let Some(ref state) = audio {
             state.sink.stop();
         }
+    }
+
+    pub fn set_voice(&mut self, voice: &str) {
+        self.voice = voice.to_string();
     }
 
     pub fn is_speaking(&self) -> bool {

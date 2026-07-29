@@ -36,7 +36,7 @@ fn main() {
             Config::new().with_window(
                 WindowBuilder::new()
                     .with_title(APP_NAME)
-                    .with_inner_size(LogicalSize::new(290.0, 48.0))
+                    .with_inner_size(LogicalSize::new(290.0, 80.0))
                     .with_resizable(false)
                     .with_always_on_top(false),
             ),
@@ -52,6 +52,12 @@ fn App() -> Element {
     let clipboard_text = use_clipboard_monitor();
     let window = use_window();
     let mut is_always_on_top = use_signal(|| false);
+    let mut voice = use_signal(|| {
+        // Load .env to get KOKORO_VOICE
+        let env_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.env");
+        dotenvy::from_path(&env_path).ok();
+        std::env::var("KOKORO_VOICE").unwrap_or_else(|_| "af_heart".to_string())
+    });
     let selector = create_text_selector();
 
     // One-time warning if accessibility permissions are not granted
@@ -166,6 +172,16 @@ fn App() -> Element {
         }
     };
 
+    let handle_voice_change = {
+        let mut tts = tts.clone();
+        move |new_voice: String| {
+            *voice.write() = new_voice.clone();
+            if let Some(ref mut engine) = *tts.write() {
+                engine.set_voice(&new_voice);
+            }
+        }
+    };
+
     rsx! {
         document::Stylesheet {
             href: asset!("/assets/main.css"),
@@ -175,9 +191,11 @@ fn App() -> Element {
             PlayerBar {
                 is_playing,
                 speed,
+                voice,
                 is_always_on_top,
                 on_play: handle_play,
                 on_stop: handle_stop,
+                on_voice_change: handle_voice_change,
                 on_always_on_top: handle_always_on_top,
                 on_play_pause_hover: handle_play_pause_hover,
             }

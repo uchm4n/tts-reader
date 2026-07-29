@@ -68,3 +68,19 @@ fn drop_cleans_up() {
     engine.speak("hello", 1.0);
     drop(engine);
 }
+
+#[test]
+fn set_voice_does_not_panic() {
+    let mut engine = TtsEngine::new();
+    engine.set_voice("am_adam");
+    engine.set_voice("bf_emma");
+    engine.set_voice("unknown_voice");
+}
+
+#[test]
+fn speak_after_set_voice_works() {
+    let mut engine = TtsEngine::new();
+    engine.set_voice("am_adam");
+    engine.speak("hello", 1.0);
+    engine.stop();
+}

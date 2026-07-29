@@ -2,6 +2,7 @@
 
 pub mod icons;
 pub mod player_bar;
+pub mod voices;
 
 pub use player_bar::PlayerBar;
 

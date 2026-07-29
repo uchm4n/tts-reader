@@ -22,6 +22,7 @@ fn player_bar_renders() {
     fn test_app() -> Element {
         let is_playing = use_signal(|| false);
         let speed = use_signal(|| 1.0);
+        let voice = use_signal(|| "af_heart".to_string());
         let is_always_on_top = use_signal(|| false);
         let on_play = move |_| {};
         let on_stop = move |_| {};
@@ -30,9 +31,11 @@ fn player_bar_renders() {
             PlayerBar {
                 is_playing,
                 speed,
+                voice,
                 is_always_on_top,
                 on_play,
                 on_stop,
+                on_voice_change: move |_| {},
                 on_always_on_top,
                 on_play_pause_hover: move |_| {},
             }
@@ -47,6 +50,7 @@ fn player_bar_at_min_speed() {
     fn test_app() -> Element {
         let is_playing = use_signal(|| false);
         let speed = use_signal(|| 0.5);
+        let voice = use_signal(|| "af_heart".to_string());
         let is_always_on_top = use_signal(|| false);
         let on_play = move |_| {};
         let on_stop = move |_| {};
@@ -55,9 +59,11 @@ fn player_bar_at_min_speed() {
             PlayerBar {
                 is_playing,
                 speed,
+                voice,
                 is_always_on_top,
                 on_play,
                 on_stop,
+                on_voice_change: move |_| {},
                 on_always_on_top,
                 on_play_pause_hover: move |_| {},
             }
@@ -72,6 +78,7 @@ fn player_bar_at_max_speed() {
     fn test_app() -> Element {
         let is_playing = use_signal(|| false);
         let speed = use_signal(|| 2.0);
+        let voice = use_signal(|| "af_heart".to_string());
         let is_always_on_top = use_signal(|| false);
         let on_play = move |_| {};
         let on_stop = move |_| {};
@@ -80,9 +87,11 @@ fn player_bar_at_max_speed() {
             PlayerBar {
                 is_playing,
                 speed,
+                voice,
                 is_always_on_top,
                 on_play,
                 on_stop,
+                on_voice_change: move |_| {},
                 on_always_on_top,
                 on_play_pause_hover: move |_| {},
             }
@@ -97,6 +106,7 @@ fn player_bar_when_playing() {
     fn test_app() -> Element {
         let is_playing = use_signal(|| true);
         let speed = use_signal(|| 1.0);
+        let voice = use_signal(|| "af_heart".to_string());
         let is_always_on_top = use_signal(|| false);
         let on_play = move |_| {};
         let on_stop = move |_| {};
@@ -105,9 +115,11 @@ fn player_bar_when_playing() {
             PlayerBar {
                 is_playing,
                 speed,
+                voice,
                 is_always_on_top,
                 on_play,
                 on_stop,
+                on_voice_change: move |_| {},
                 on_always_on_top,
                 on_play_pause_hover: move |_| {},
             }
@@ -122,6 +134,7 @@ fn player_bar_always_on_top_active() {
     fn test_app() -> Element {
         let is_playing = use_signal(|| false);
         let speed = use_signal(|| 1.0);
+        let voice = use_signal(|| "af_heart".to_string());
         let is_always_on_top = use_signal(|| true);
         let on_play = move |_| {};
         let on_stop = move |_| {};
@@ -130,9 +143,11 @@ fn player_bar_always_on_top_active() {
             PlayerBar {
                 is_playing,
                 speed,
+                voice,
                 is_always_on_top,
                 on_play,
                 on_stop,
+                on_voice_change: move |_| {},
                 on_always_on_top,
                 on_play_pause_hover: move |_| {},
             }
@@ -147,6 +162,7 @@ fn player_bar_always_on_top_inactive() {
     fn test_app() -> Element {
         let is_playing = use_signal(|| false);
         let speed = use_signal(|| 1.0);
+        let voice = use_signal(|| "af_heart".to_string());
         let is_always_on_top = use_signal(|| false);
         let on_play = move |_| {};
         let on_stop = move |_| {};
@@ -155,9 +171,11 @@ fn player_bar_always_on_top_inactive() {
             PlayerBar {
                 is_playing,
                 speed,
+                voice,
                 is_always_on_top,
                 on_play,
                 on_stop,
+                on_voice_change: move |_| {},
                 on_always_on_top,
                 on_play_pause_hover: move |_| {},
             }
@@ -198,6 +216,7 @@ fn player_bar_speed_label_at_default() {
     fn test_app() -> Element {
         let is_playing = use_signal(|| false);
         let speed = use_signal(|| 1.0);
+        let voice = use_signal(|| "af_heart".to_string());
         let is_always_on_top = use_signal(|| false);
         let on_play = move |_| {};
         let on_stop = move |_| {};
@@ -206,9 +225,11 @@ fn player_bar_speed_label_at_default() {
             PlayerBar {
                 is_playing,
                 speed,
+                voice,
                 is_always_on_top,
                 on_play,
                 on_stop,
+                on_voice_change: move |_| {},
                 on_always_on_top,
                 on_play_pause_hover: move |_| {},
             }
@@ -223,6 +244,7 @@ fn player_bar_play_button_title() {
     fn test_app() -> Element {
         let is_playing = use_signal(|| false);
         let speed = use_signal(|| 1.0);
+        let voice = use_signal(|| "af_heart".to_string());
         let is_always_on_top = use_signal(|| false);
         let on_play = move |_| {};
         let on_stop = move |_| {};
@@ -231,9 +253,11 @@ fn player_bar_play_button_title() {
             PlayerBar {
                 is_playing,
                 speed,
+                voice,
                 is_always_on_top,
                 on_play,
                 on_stop,
+                on_voice_change: move |_| {},
                 on_always_on_top,
                 on_play_pause_hover: move |_| {},
             }
@@ -248,6 +272,7 @@ fn player_bar_pause_button_title_when_playing() {
     fn test_app() -> Element {
         let is_playing = use_signal(|| true);
         let speed = use_signal(|| 1.0);
+        let voice = use_signal(|| "af_heart".to_string());
         let is_always_on_top = use_signal(|| false);
         let on_play = move |_| {};
         let on_stop = move |_| {};
@@ -256,9 +281,11 @@ fn player_bar_pause_button_title_when_playing() {
             PlayerBar {
                 is_playing,
                 speed,
+                voice,
                 is_always_on_top,
                 on_play,
                 on_stop,
+                on_voice_change: move |_| {},
                 on_always_on_top,
                 on_play_pause_hover: move |_| {},
             }

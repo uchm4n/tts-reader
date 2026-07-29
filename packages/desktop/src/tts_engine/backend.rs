@@ -51,6 +51,13 @@ impl TtsEngine {
             Backend::Say(say) => say.is_speaking(),
         }
     }
+
+    pub fn set_voice(&mut self, voice: &str) {
+        match &mut self.backend {
+            Backend::Kokoro(kokoro) => kokoro.set_voice(voice),
+            Backend::Say(say) => say.set_voice(voice),
+        }
+    }
 }
 
 impl Default for TtsEngine {

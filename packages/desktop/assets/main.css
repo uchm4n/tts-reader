@@ -36,11 +36,39 @@ body {
 /* Player Bar */
 .player-bar {
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0 12px;
+    height: 76px;
+    background-color: hsl(var(--background));
+}
+
+/* Controls Row */
+.controls-row {
+    display: flex;
     align-items: center;
     gap: 6px;
-    padding: 0 12px;
-    height: 48px;
+}
+
+/* Voice Selector */
+.voice-selector {
+    width: 100%;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
     background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    margin-top: 4px;
+    appearance: auto;
+}
+
+.voice-selector:focus-visible {
+    box-shadow: 0 0 0 2px hsl(var(--ring));
 }
 
 /* Icon Buttons */
