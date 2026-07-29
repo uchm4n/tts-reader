@@ -1,6 +1,6 @@
 # TTS Reader
 
-A minimalistic macOS desktop application that reads text aloud from the system clipboard.
+A lightweight macOS player that speaks text aloud using Kokoro's 82M-param voice model.
 
 ![TTS Reader Screenshot](screenshot.png)
 
