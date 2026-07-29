@@ -2,7 +2,7 @@
 
 A lightweight macOS TTS player that speaks text aloud using Kokoro's 82M-param voice model.
 
-![TTS Reader Screenshot](screenshot.png
+![TTS Reader Screenshot](screenshot.png)
 
 ## Features
 
