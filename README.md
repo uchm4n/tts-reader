@@ -22,7 +22,7 @@ A minimalistic macOS desktop application that reads text aloud from the system c
 
 Download the latest release:
 
-[TTS Reader.dmg](TtsReader.dmg)
+[TTS Reader.dmg](https://limewire.com/d/9CiGK#Y496spzXJl)
 
 Just open the `.dmg` file and drag the app to your Applications folder.
 
