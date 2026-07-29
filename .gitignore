@@ -7,7 +7,6 @@
 docs/
 .opencode/
 .ai/
-.github/
 .claude/
 
 packages/kokoro/dict
