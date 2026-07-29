@@ -105,8 +105,8 @@ Available voices:
 
 
 | Name         | Nationality | Gender | Sample                                                                                                                                  |
-| ------------ | ----------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **af_heart** | American    | Female | <audio controls src="https://cdn-uploads.huggingface.co/production/uploads/61b253b7ac5ecaae3d1efe0c/S_9tkA75BT_QHKOzSX6S-.wav"></audio> |
+| ------------ | ----------- | ------ |-----------------------------------------------------------------------------------------------------------------------------------------|
+| **af_heart** | American    | Female | <audio controls src="packages/kokoro/af_heart.wav"></audio>                                                                             |
 | af_alloy     | American    | Female | <audio controls src="https://cdn-uploads.huggingface.co/production/uploads/61b253b7ac5ecaae3d1efe0c/wiZ3gvlL--p5pRItO4YRE.wav"></audio> |
 | af_aoede     | American    | Female | <audio controls src="https://cdn-uploads.huggingface.co/production/uploads/61b253b7ac5ecaae3d1efe0c/Nv1xMwzjTdF9MR8v0oEEJ.wav"></audio> |
 | af_bella     | American    | Female | <audio controls src="https://cdn-uploads.huggingface.co/production/uploads/61b253b7ac5ecaae3d1efe0c/sWN0rnKU6TlLsVdGqRktF.wav"></audio> |
