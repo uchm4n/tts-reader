@@ -1,11 +1,14 @@
 //! Kokoro TTS backend using kokoro-en crate.
 
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
+use futures::StreamExt;
 use kokoro_en::{KokoroTts, Voice};
 use rodio::buffer::SamplesBuffer;
 use rodio::{OutputStream, Sink};
+use tokio::sync::mpsc;
 
 // Embedded model and voice files for self-contained builds.
 // Users can override via KOKORO_MODEL_DIR / KOKORO_VOICE_DIR env vars.
@@ -78,6 +81,13 @@ pub struct KokoroBackend {
     /// AudioState contains rodio::OutputStream which is !Send on macOS,
     /// but TtsEngine is only accessed from the main thread, so this is safe.
     audio: *mut Option<AudioState>,
+    /// Channel receiver for audio chunks from the streaming synthesis thread.
+    /// Stored here to keep it alive; the spawned Dioxus task owns the receiver.
+    _audio_rx: Option<mpsc::UnboundedReceiver<Vec<f32>>>,
+    /// Flag to signal the streaming thread to stop synthesis.
+    stop_flag: Arc<AtomicBool>,
+    /// Flag indicating the streaming thread is still active (producing audio).
+    is_active: Arc<AtomicBool>,
 }
 
 // Safety: KokoroBackend is only ever accessed from the main thread.
@@ -120,10 +130,8 @@ impl KokoroBackend {
         // - Otherwise, write embedded files to temp dir
         let (model_path, voice_dir) = if std::env::var("KOKORO_MODEL_DIR").is_ok() {
             let model_dir = std::env::var("KOKORO_MODEL_DIR").unwrap();
-            let voice_dir = std::env::var("KOKORO_VOICE_DIR")
-                .unwrap_or_else(|_| model_dir.clone());
-            let model_name = std::env::var("KOKORO_MODEL")
-                .unwrap_or_else(|_| "model.onnx".to_string());
+            let voice_dir = std::env::var("KOKORO_VOICE_DIR").unwrap_or_else(|_| model_dir.clone());
+            let model_name = std::env::var("KOKORO_MODEL").unwrap_or_else(|_| "model.onnx".to_string());
             let path = PathBuf::from(&model_dir).join(&model_name);
             if !path.exists() {
                 return Err(format!("Model file not found: {}", path.display()));
@@ -152,6 +160,9 @@ impl KokoroBackend {
             tts: Arc::new(Mutex::new(tts)),
             voice,
             audio,
+            _audio_rx: None,
+            stop_flag: Arc::new(AtomicBool::new(false)),
+            is_active: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -189,59 +200,112 @@ impl KokoroBackend {
         let voice = self.voice.clone();
         let text = text.to_string();
 
-        // Spawn synthesis on a background thread with its own tokio runtime.
+        // Reset flags for new session.
+        self.stop_flag.store(false, Ordering::Relaxed);
+        self.is_active.store(true, Ordering::Relaxed);
+
+        let stop_flag = self.stop_flag.clone();
+        let is_active = self.is_active.clone();
+
+        // Create channel for audio chunks.
+        let (tx, rx) = mpsc::unbounded_channel::<Vec<f32>>();
+        self._audio_rx = Some(rx);
+
+        // Spawn streaming synthesis on a dedicated thread with its own tokio runtime.
         // This avoids "Cannot start a runtime from within a runtime" panics
         // when called from within Dioxus's async context.
-        let handle = std::thread::spawn(move || -> Result<Vec<f32>, String> {
+        std::thread::spawn(move || {
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
-                .map_err(|e| format!("Failed to create runtime: {e}"))?;
+                .expect("Failed to create tokio runtime");
+
             rt.block_on(async {
-                let tts = tts.lock().map_err(|e| format!("Lock failed: {e}"))?;
-                tts.synth(&text, Voice::new(&voice).with_speed(rate))
-                    .await
-                    .map(|(samples, _)| samples)
-                    .map_err(|e| format!("Synth failed: {e}"))
-            })
+                let (mut sink, mut stream) = {
+                    let tts = match tts.lock() {
+                        Ok(tts) => tts,
+                        Err(e) => {
+                            eprintln!("[TTS] Lock failed: {e}");
+                            is_active.store(false, Ordering::Relaxed);
+                            return;
+                        }
+                    };
+                    tts.stream(Voice::new(&voice).with_speed(rate))
+                };
+
+                if let Err(e) = sink.synth(text).await {
+                    eprintln!("[TTS] Synth request failed: {e}");
+                    is_active.store(false, Ordering::Relaxed);
+                    return;
+                }
+                drop(sink);
+
+                while let Some((audio, _took)) = stream.next().await {
+                    if stop_flag.load(Ordering::Relaxed) {
+                        break;
+                    }
+                    if tx.send(audio).is_err() {
+                        break;
+                    }
+                }
+
+                is_active.store(false, Ordering::Relaxed);
+            });
         });
+    }
 
-        let samples = handle
-            .join()
-            .unwrap_or_else(|_| Err("Synthesis thread panicked".into()))
-            .ok();
-
-        if let Some(samples) = samples {
-            // Safety: self.audio is a valid Box pointer, only accessed from main thread.
-            let audio = unsafe { &*self.audio };
-            if let Some(ref state) = audio {
-                let source = SamplesBuffer::new(1, 24000, samples);
-                state.sink.append(source);
+    /// Poll and consume audio chunks from the streaming channel.
+    /// Call this periodically from the main thread to feed audio to rodio.
+    pub fn poll_audio(&mut self) {
+        if let Some(ref mut rx) = self._audio_rx {
+            while let Ok(chunk) = rx.try_recv() {
+                let audio = unsafe { &*self.audio };
+                if let Some(ref state) = audio {
+                    let source = SamplesBuffer::new(1, 24000, chunk);
+                    state.sink.append(source);
+                }
             }
-        } else {
-            eprintln!("[TTS] Kokoro synthesis failed");
         }
     }
 
     pub fn stop(&mut self) {
+        // Signal the streaming thread to stop.
+        self.stop_flag.store(true, Ordering::Relaxed);
+        self.is_active.store(false, Ordering::Relaxed);
+
         // Safety: self.audio is a valid Box pointer, only accessed from main thread.
         let audio = unsafe { &*self.audio };
         if let Some(ref state) = audio {
             state.sink.stop();
         }
+
+        // Clear the receiver.
+        self._audio_rx = None;
     }
+
+    pub fn pause(&mut self) {
+        // Safety: self.audio is a valid Box pointer, only accessed from main thread.
+        let audio = unsafe { &*self.audio };
+        if let Some(ref state) = audio {
+            state.sink.pause();
+        }
+    }
+
+    pub fn resume(&mut self) {
+        // Safety: self.audio is a valid Box pointer, only accessed from main thread.
+        let audio = unsafe { &*self.audio };
+        if let Some(ref state) = audio {
+            state.sink.play();
+        }
+    }
+
 
     pub fn set_voice(&mut self, voice: &str) {
         self.voice = voice.to_string();
     }
 
     pub fn is_speaking(&self) -> bool {
-        // Safety: self.audio is a valid Box pointer, only accessed from main thread.
-        let audio = unsafe { &*self.audio };
-        audio
-            .as_ref()
-            .map(|state| !state.sink.empty())
-            .unwrap_or(false)
+        self.is_active.load(Ordering::Relaxed)
     }
 }
 

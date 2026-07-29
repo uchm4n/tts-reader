@@ -5196,6 +5196,7 @@ dependencies = [
  "dioxus",
  "dioxus-desktop",
  "dotenvy",
+ "futures",
  "kokoro-en",
  "ort",
  "ort-sys",

@@ -13,6 +13,7 @@ use crate::AlwaysOnTopEvent;
 #[component]
 pub fn PlayerBar(
     is_playing: Signal<bool>,
+    is_paused: Signal<bool>,
     speed: Signal<f32>,
     voice: Signal<String>,
     is_always_on_top: Signal<bool>,
@@ -49,11 +50,15 @@ pub fn PlayerBar(
                 }
                 button {
                     class: "icon-btn play",
-                    title: if is_playing() { "Pause" } else { "Play" },
+                    title: if is_playing() {
+                        if is_paused() { "Resume" } else { "Pause" }
+                    } else {
+                        "Play"
+                    },
                     onclick: move |_| on_play.call(()),
                     onmouseenter: move |_| on_play_pause_hover.call(true),
                     onmouseleave: move |_| on_play_pause_hover.call(false),
-                    if is_playing() {
+                    if is_playing() && !is_paused() {
                         PauseIcon {}
                     } else {
                         PlayIcon {}

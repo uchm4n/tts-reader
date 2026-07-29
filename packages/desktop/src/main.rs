@@ -47,6 +47,7 @@ fn main() {
 #[component]
 fn App() -> Element {
     let mut is_playing = use_signal(|| false);
+    let mut is_paused = use_signal(|| false);
     let speed = use_signal(|| 1.0);
     let mut tts = use_signal(|| None::<TtsEngine>);
     let clipboard_text = use_clipboard_monitor();
@@ -91,15 +92,21 @@ fn App() -> Element {
         if let HotKeyState::Pressed = state {
             if is_playing() {
                 if let Some(ref mut engine) = *tts.write() {
-                    engine.stop();
+                    if is_paused() {
+                        engine.resume();
+                        *is_paused.write() = false;
+                    } else {
+                        engine.pause();
+                        *is_paused.write() = true;
+                    }
                 }
-                *is_playing.write() = false;
             } else {
                 let text = get_text_for_playback(selector.as_ref(), &clipboard_text());
                 if !text.is_empty() {
                     if let Some(ref mut engine) = *tts.write() {
                         engine.speak(&text, speed());
                         *is_playing.write() = true;
+                        *is_paused.write() = false;
                     }
                 }
             }
@@ -111,13 +118,16 @@ fn App() -> Element {
     spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_millis(100)).await;
-            if is_playing() {
-                let speaking = tts
-                    .write()
-                    .as_mut()
-                    .map_or(false, |engine| engine.is_speaking());
-                if !speaking {
-                    *is_playing.write() = false;
+            if let Some(ref mut engine) = *tts.write() {
+                // Poll audio chunks from the streaming channel and feed to rodio
+                engine.poll_audio();
+
+                if is_playing() && !is_paused() {
+                    let speaking = engine.is_speaking();
+                    if !speaking {
+                        *is_playing.write() = false;
+                        *is_paused.write() = false;
+                    }
                 }
             }
         }
@@ -127,15 +137,21 @@ fn App() -> Element {
     let handle_play = move |_| {
         if is_playing() {
             if let Some(ref mut engine) = *tts.write() {
-                engine.stop();
+                if is_paused() {
+                    engine.resume();
+                    *is_paused.write() = false;
+                } else {
+                    engine.pause();
+                    *is_paused.write() = true;
+                }
             }
-            *is_playing.write() = false;
         } else {
             let text = get_text_for_playback(selector_play.as_ref(), &clipboard_text());
             if !text.is_empty() {
                 if let Some(ref mut engine) = *tts.write() {
                     engine.speak(&text, speed());
                     *is_playing.write() = true;
+                    *is_paused.write() = false;
                 }
             }
         }
@@ -146,6 +162,7 @@ fn App() -> Element {
             engine.stop();
         }
         *is_playing.write() = false;
+        *is_paused.write() = false;
     };
 
     let handle_play_pause_hover = {
@@ -190,6 +207,7 @@ fn App() -> Element {
             class: "app",
             PlayerBar {
                 is_playing,
+                is_paused,
                 speed,
                 voice,
                 is_always_on_top,

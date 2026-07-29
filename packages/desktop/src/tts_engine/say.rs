@@ -39,6 +39,14 @@ impl SayBackend {
         }
     }
 
+    pub fn pause(&mut self) {
+        // say backend does not support pause — no-op.
+    }
+
+    pub fn resume(&mut self) {
+        // say backend does not support resume — no-op.
+    }
+
     pub fn set_voice(&mut self, _voice: &str) {
         // say backend doesn't support voice selection
     }

@@ -84,3 +84,59 @@ fn speak_after_set_voice_works() {
     engine.speak("hello", 1.0);
     engine.stop();
 }
+
+// --- Pause/Resume tests ---
+
+#[test]
+fn pause_when_not_speaking_is_safe() {
+    let mut engine = TtsEngine::new();
+    engine.pause();
+    assert!(!engine.is_speaking());
+}
+
+#[test]
+fn resume_when_not_speaking_is_safe() {
+    let mut engine = TtsEngine::new();
+    engine.resume();
+    assert!(!engine.is_speaking());
+}
+
+
+
+
+#[test]
+fn pause_then_resume_does_not_panic() {
+    let mut engine = TtsEngine::new();
+    engine.speak("hello", 1.0);
+    engine.pause();
+    engine.resume();
+    engine.stop();
+}
+
+#[test]
+fn multiple_pause_resume_cycles() {
+    let mut engine = TtsEngine::new();
+    engine.speak("hello world this is a longer text for testing", 1.0);
+    engine.pause();
+    engine.resume();
+    engine.pause();
+    engine.resume();
+    engine.stop();
+}
+
+#[test]
+fn pause_stop_does_not_panic() {
+    let mut engine = TtsEngine::new();
+    engine.speak("hello", 1.0);
+    engine.pause();
+    engine.stop();
+}
+
+#[test]
+fn stop_after_resume_does_not_panic() {
+    let mut engine = TtsEngine::new();
+    engine.speak("hello", 1.0);
+    engine.pause();
+    engine.resume();
+    engine.stop();
+}

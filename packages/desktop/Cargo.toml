@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 dioxus = { workspace = true, features = ["desktop"] }
 dioxus-desktop = { workspace = true }
+futures = "0.3"
 kokoro-en = { version = "0.1.4", default-features = false }
 ort = { version = "2.0.0-rc.11", features = ["coreml"] }
 ort-sys = { version = "2.0.0-rc.11", features = ["lax-feature-matching"] }

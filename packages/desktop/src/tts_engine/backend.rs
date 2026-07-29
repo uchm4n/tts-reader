@@ -45,6 +45,27 @@ impl TtsEngine {
         }
     }
 
+    pub fn pause(&mut self) {
+        match &mut self.backend {
+            Backend::Kokoro(kokoro) => kokoro.pause(),
+            Backend::Say(say) => say.pause(),
+        }
+    }
+
+    pub fn resume(&mut self) {
+        match &mut self.backend {
+            Backend::Kokoro(kokoro) => kokoro.resume(),
+            Backend::Say(say) => say.resume(),
+        }
+    }
+
+    pub fn poll_audio(&mut self) {
+        match &mut self.backend {
+            Backend::Kokoro(kokoro) => kokoro.poll_audio(),
+            Backend::Say(_) => {}
+        }
+    }
+
     pub fn is_speaking(&mut self) -> bool {
         match &mut self.backend {
             Backend::Kokoro(kokoro) => kokoro.is_speaking(),
