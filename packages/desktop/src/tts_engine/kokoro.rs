@@ -305,7 +305,15 @@ impl KokoroBackend {
     }
 
     pub fn is_speaking(&self) -> bool {
-        self.is_active.load(Ordering::Relaxed)
+        if self.is_active.load(Ordering::Relaxed) {
+            return true;
+        }
+        // Check if rodio sink still has audio to play
+        let audio = unsafe { &*self.audio };
+        audio
+            .as_ref()
+            .map(|state| !state.sink.empty())
+            .unwrap_or(false)
     }
 }
 
