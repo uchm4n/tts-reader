@@ -5,43 +5,36 @@ use axuielement::ax_attribute::roles::{
 };
 use axuielement::ax_attribute::{AX_FOCUSED_UI_ELEMENT_ATTRIBUTE, AX_SELECTED_TEXT_ATTRIBUTE, AX_ROLE_ATTRIBUTE};
 use axuielement::prelude::*;
+use axuielement::process_trust::{is_process_trusted, is_process_trusted_with_prompt};
 
 use super::TextSelector;
 
 // AXWebArea role is not defined in axuielement crate
 const AX_WEB_AREA_ROLE: &str = "AXWebArea";
 
-pub struct MacOSOption {
-    enabled: bool,
-}
+pub struct MacOSOption;
 
 impl MacOSOption {
     pub fn new() -> Self {
-        let enabled = api_enabled();
-        if !enabled {
+        // Always try the AX API — it handles its own permission errors gracefully.
+        // Only prompt for permissions on first launch (not every time).
+        if !is_process_trusted() {
+            let _prompted = is_process_trusted_with_prompt();
             eprintln!(
-                "[TTS Reader] Accessibility permissions not enabled.\n\
-                 Go to System Settings → Privacy & Security → Accessibility\n\
+                "[TTS Reader] Accessibility permissions not yet granted for this app.\n\
+                 If a dialog appeared, please allow access. If not, go to:\n\
+                 System Settings → Privacy & Security → Accessibility\n\
                  and add this application. Then restart the app."
             );
         }
-        Self { enabled }
-    }
-
-    pub fn is_enabled(&self) -> bool {
-        self.enabled
+        Self
     }
 }
 
 impl TextSelector for MacOSOption {
     fn get_selected_text(&self) -> Option<String> {
-        if !self.enabled {
-            eprintln!(
-                "[TTS Reader] Accessibility permissions not granted. Falling back to clipboard."
-            );
-            return None;
-        }
-
+        // Don't check is_process_trusted() here — it's unreliable for ad-hoc signed apps.
+        // Just try the AX API calls. They'll fail gracefully if not trusted.
         let system = SystemWideElement::new()?;
 
         let focused_app = match system.focused_application() {

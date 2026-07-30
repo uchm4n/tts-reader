@@ -55,14 +55,4 @@ pub fn create_text_selector() -> Box<dyn TextSelector> {
     }
 }
 
-/// Check if the platform text selection feature is available and properly permissioned.
-pub fn is_text_selection_available() -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        macos::MacOSOption::new().is_enabled()
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        false
-    }
-}
+

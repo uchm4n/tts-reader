@@ -13,7 +13,6 @@ mod tts_engine;
 
 use clipboard_monitor::use_clipboard_monitor;
 use text_selector::create_text_selector;
-use text_selector::is_text_selection_available;
 use tts_engine::TtsEngine;
 use ui::{AlwaysOnTopEvent, PlayerBar};
 
@@ -60,18 +59,6 @@ fn App() -> Element {
         std::env::var("KOKORO_VOICE").unwrap_or_else(|_| "af_heart".to_string())
     });
     let selector = create_text_selector();
-
-    // One-time warning if accessibility permissions are not granted
-    use_effect(move || {
-        if !is_text_selection_available() {
-            eprintln!(
-                "[TTS Reader] Accessibility permissions not granted.\n\
-                 Selected text reading is disabled. The app will use clipboard text instead.\n\
-                 To enable: System Settings → Privacy & Security → Accessibility → add this app.\n\
-                 Then restart the app."
-            );
-        }
-    });
 
     // Initialize TTS engine on a background thread to avoid blocking the webview
     spawn(async move {

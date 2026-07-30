@@ -7,11 +7,6 @@ fn text_selector_creation_works() {
     assert_eq!(selector.name(), "macOS Accessibility");
 }
 
-#[test]
-fn is_text_selection_available_returns_bool() {
-    // Just verify it doesn't panic
-    let _result = tts_reader::text_selector::is_text_selection_available();
-}
 
 #[test]
 fn get_selected_text_returns_option() {
