@@ -114,6 +114,18 @@ fn App() -> Element {
     })
     .ok();
 
+    // Global shortcut: Cmd+Escape to stop playback
+    use_global_shortcut("Cmd+Escape", move |state| {
+        if let HotKeyState::Pressed = state {
+            if let Some(ref mut engine) = *tts.write() {
+                engine.stop();
+            }
+            *is_playing.write() = false;
+            *is_paused.write() = false;
+        }
+    })
+    .ok();
+
     // Poll is_speaking() and reset is_playing when speech finishes
     spawn(async move {
         loop {

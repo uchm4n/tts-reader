@@ -194,3 +194,34 @@ fn stop_does_not_immediately_clear_speaking_if_rodio_has_audio() {
     std::thread::sleep(Duration::from_millis(200));
     assert!(!engine.is_speaking());
 }
+
+// --- Global shortcut stop behavior tests ---
+// Cmd+Escape calls engine.stop() directly, same as Stop button.
+// These verify that stop() correctly interrupts streaming.
+
+#[test]
+fn stop_interrupts_streaming_and_resets_state() {
+    let mut engine = TtsEngine::new();
+    engine.speak("hello world this is a longer text for testing streaming", 1.0);
+    // Streaming should be active immediately
+    assert!(engine.is_speaking());
+    // Simulate Cmd+Escape behavior: stop() + reset state
+    engine.stop();
+    std::thread::sleep(Duration::from_millis(100));
+    // After stop, streaming should cease and state should be reset
+    assert!(!engine.is_speaking());
+}
+
+#[test]
+fn stop_after_speak_sets_inactive_flag() {
+    let mut engine = TtsEngine::new();
+    engine.speak("testing stop flag", 1.0);
+    // Verify streaming is active
+    let was_speaking = engine.is_speaking();
+    engine.stop();
+    // After stop, is_speaking should eventually return false
+    std::thread::sleep(Duration::from_millis(200));
+    assert!(!engine.is_speaking());
+    // Verify we actually stopped something
+    assert!(was_speaking);
+}
