@@ -15,7 +15,6 @@ A lightweight TTS player that speaks text aloud using Kokoro's 82M-param voice m
 - **Self-Contained** - Model and voices embedded in the binary, no external files needed
 - **Minimal UI** - Tiny floating player that doesn't get in the way
 
-
 **Note**: application only works for macOS and Linux, future support for Windows is planned.
 
 ## Download
@@ -95,6 +94,7 @@ KOKORO_VOICE=af_heart                    # Default voice (American Female)
 ```
 
 Available voices:
+
 - **American Female**: Heart, Alloy, Aoede, Bella, Jessica, Kore, Nicole, Nova, River, Sarah, Sky
 - **American Male**: Adam, Echo, Eric, Fenrir, Liam, Michael, Onyx, Puck, Santa
 - **British Female**: Alice, Emma, Isabella, Lily
@@ -102,8 +102,8 @@ Available voices:
 
 ## Voice Samples
 
-Listen to all 28 voice samples on the [Kokoro-82M-v1.0-ONNX HuggingFace page](https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX).
-
+Listen to all 28 voice samples on
+the [Kokoro-82M-v1.0-ONNX HuggingFace page](https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX).
 
 ## License
 
