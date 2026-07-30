@@ -61,14 +61,18 @@ cd packages/desktop && cargo run
 ### Production Build
 
 ```bash
-# Build release binary (includes embedded model, ~310MB)
-cargo build --release
-
-# Or create a .app bundle
+# Note: Build release binary (includes embedded model, ~310MB)
+# Create a .app bundle for macOS
 dx bundle --platform macos --package-types app
 
-# Or create a .dmg installer
+# Or create a .dmg installer for macOS
 dx bundle --platform macos --package-types dmg
+
+# Or create a .deb installer for linux
+dx bundle --platform linux --package-types deb --package tts-reader
+
+# And .exe for windows
+dx bundle --platform windows --package-types nsis --package tts-reader
 ```
 
 ## Tech Stack
