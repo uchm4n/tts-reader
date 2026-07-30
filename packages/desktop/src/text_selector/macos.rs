@@ -62,7 +62,7 @@ impl TextSelector for MacOSOption {
             .ok()
             .flatten();
 
-        // Step 1: Check focused element first (fast path)
+        // Step 1: Check focused element first (fast path) — works for PDF readers, IDEs, address bar
         if let Some(ref el) = focused_element {
             if let Ok(Some(text)) = el.string_attribute(AX_SELECTED_TEXT_ATTRIBUTE) {
                 if !text.is_empty() {
@@ -71,7 +71,7 @@ impl TextSelector for MacOSOption {
             }
         }
 
-        // Step 2: Search application -> windows -> AXWebArea (for Chrome, browsers)
+        // Step 2: Search application -> windows -> AXWebArea (for browsers)
         if let Some(text) = search_web_area_for_selected_text(&focused_app) {
             return Some(text);
         }
@@ -93,7 +93,42 @@ impl TextSelector for MacOSOption {
             }
         }
 
-        // Step 4: Clipboard fallback
+        // Step 4: Activate app and retry — Chrome/browsers fallback
+        // Chrome's accessibility tree doesn't expose AXSelectedText unless the app is frontmost
+        activate_app(&focused_app);
+
+        // Retry fast path with activated app
+        if let Some(ref el) = focused_element {
+            if let Ok(Some(text)) = el.string_attribute(AX_SELECTED_TEXT_ATTRIBUTE) {
+                if !text.is_empty() {
+                    return Some(text);
+                }
+            }
+        }
+
+        // Retry AXWebArea search with activated app
+        if let Some(text) = search_web_area_for_selected_text(&focused_app) {
+            return Some(text);
+        }
+
+        // Retry role-based search with activated app
+        if let Some(ref el) = focused_element {
+            let roles = [
+                AX_TEXT_AREA_ROLE,
+                AX_WEB_AREA_ROLE,
+                AX_GROUP_ROLE,
+                AX_SCROLL_AREA_ROLE,
+                AX_STATIC_TEXT_ROLE,
+            ];
+
+            for role in &roles {
+                if let Some(text) = search_children_by_role(el, role) {
+                    return Some(text);
+                }
+            }
+        }
+
+        // Step 5: Clipboard fallback — last resort
         clipboard_copy_and_read()
     }
 
@@ -158,6 +193,24 @@ fn search_children_by_role(element: &AXUIElement, target_role: &str) -> Option<S
     }
 
     None
+}
+
+/// Activate the focused app before querying its accessibility tree.
+/// Mirrors the AppleScript: tell application "Google Chrome" to activate
+fn activate_app(app: &AXUIElement) {
+    if let Ok(pid) = app.pid() {
+        let _ = std::process::Command::new("osascript")
+            .args([
+                "-e",
+                &format!(
+                    "tell application \"System Events\" to set frontmost of first process whose unix id is {} to true",
+                    pid
+                ),
+            ])
+            .output();
+        // Brief delay to let activation complete
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
 }
 
 /// Simulate Cmd+C and read clipboard, preserving original content.
