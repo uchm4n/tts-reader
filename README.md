@@ -25,11 +25,10 @@ Download the latest release:
 
 [TTS Reader.deb](https://organizer.lamart.ge/downloads/TtsReader-v0.0.3.deb)
 
-Just open the `.dmg` file and drag the app to your Applications folder.
 
 ## How to Use
 
-1. **Copy text** anywhere on your Mac (select text + `Cmd+C`)
+1. **Copy text** or **Select text** anywhere on your Mac/Linux (select text + `Cmd+C`)
 2. **Click Play** or press `Cmd+Shift+R` to start listening
 3. **Adjust speed** with the `<<` and `>>` buttons
 4. **Select Voice** - Choose from 28 voices in the dropdown below the controls
@@ -39,7 +38,6 @@ Just open the `.dmg` file and drag the app to your Applications folder.
 
 ### Prerequisites
 
-- macOS 12.0 or later
 - Rust (install via [rustup](https://rustup.rs/))
 - Dioxus CLI
 
@@ -81,7 +79,8 @@ dx bundle --platform macos --package-types dmg
 - [ort](https://github.com/pykeio/ort) - ONNX Runtime for model inference
 - [rodio](https://github.com/RustAudio/rodio) - Audio playback
 - macOS `say` command - Fallback TTS
-- `pbpaste` - Clipboard monitoring
+- Linux `espeak` command - Fallback TTS
+- `pbpaste` or `xclip` - Clipboard monitoring
 
 ## Voice Configuration
 
