@@ -20,7 +20,7 @@ const APP_NAME: &str = "TTS Reader";
 
 /// Get text for playback: try selected text first, fall back to clipboard.
 fn get_text_for_playback(
-    selector: &dyn text_selector::TextSelector,
+    selector: &mut dyn text_selector::TextSelector,
     clipboard_text: &str,
 ) -> String {
     selector
@@ -58,7 +58,7 @@ fn App() -> Element {
         dotenvy::from_path(&env_path).ok();
         std::env::var("KOKORO_VOICE").unwrap_or_else(|_| "af_heart".to_string())
     });
-    let selector = create_text_selector();
+    let mut selector = create_text_selector();
 
     // Initialize TTS engine on a background thread to avoid blocking the webview
     spawn(async move {
@@ -88,7 +88,7 @@ fn App() -> Element {
                     }
                 }
             } else {
-                let text = get_text_for_playback(selector.as_ref(), &clipboard_text());
+                let text = get_text_for_playback(selector.as_mut(), &clipboard_text());
                 if !text.is_empty() {
                     if let Some(ref mut engine) = *tts.write() {
                         engine.speak(&text, speed());
@@ -132,7 +132,7 @@ fn App() -> Element {
         }
     });
 
-    let selector_play = create_text_selector();
+    let mut selector_play = create_text_selector();
     let handle_play = move |_| {
         if is_playing() {
             if let Some(ref mut engine) = *tts.write() {
@@ -145,7 +145,7 @@ fn App() -> Element {
                 }
             }
         } else {
-            let text = get_text_for_playback(selector_play.as_ref(), &clipboard_text());
+            let text = get_text_for_playback(selector_play.as_mut(), &clipboard_text());
             if !text.is_empty() {
                 if let Some(ref mut engine) = *tts.write() {
                     engine.speak(&text, speed());

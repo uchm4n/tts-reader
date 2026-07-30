@@ -15,7 +15,8 @@ tokio = { version = "1", features = ["time", "rt-multi-thread"] }
 ui = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-axuielement = "0.9"
+arboard = "3.6"
+enigo = { version = "0.6", default-features = false, features = ["serde"] }
 ort = { version = "2.0.0-rc.11", features = ["coreml"] }
 
 [target.'cfg(not(target_os = "macos"))'.dependencies]

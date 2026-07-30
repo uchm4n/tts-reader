@@ -11,7 +11,7 @@ impl WindowsOption {
 }
 
 impl TextSelector for WindowsOption {
-    fn get_selected_text(&self) -> Option<String> {
+    fn get_selected_text(&mut self) -> Option<String> {
         // TODO: Windows UI Automation API
         None
     }

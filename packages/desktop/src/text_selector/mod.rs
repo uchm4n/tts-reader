@@ -11,7 +11,7 @@ pub mod windows;
 pub trait TextSelector: Send {
     /// Attempt to read the currently selected text.
     /// Returns None if unavailable (permissions, no selection, unsupported app).
-    fn get_selected_text(&self) -> Option<String>;
+    fn get_selected_text(&mut self) -> Option<String>;
 
     /// Human-readable name of the selector backend.
     #[allow(unused)]
@@ -23,7 +23,7 @@ pub trait TextSelector: Send {
 struct NullSelector;
 
 impl TextSelector for NullSelector {
-    fn get_selected_text(&self) -> Option<String> {
+    fn get_selected_text(&mut self) -> Option<String> {
         None
     }
 
@@ -54,5 +54,3 @@ pub fn create_text_selector() -> Box<dyn TextSelector> {
         Box::new(NullSelector)
     }
 }
-
-
