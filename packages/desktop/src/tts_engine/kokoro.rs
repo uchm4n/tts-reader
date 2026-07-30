@@ -97,15 +97,11 @@ unsafe impl Send for KokoroBackend {}
 /// Write embedded files to a temp directory and return (model_path, voice_dir).
 fn write_embedded_to_temp() -> Result<(PathBuf, String), String> {
     let temp = std::env::temp_dir().join("tts-reader");
-    std::fs::create_dir_all(&temp)
-        .map_err(|e| format!("Failed to create temp dir: {e}"))?;
-
-    std::fs::write(temp.join("model.onnx"), MODEL_BYTES)
-        .map_err(|e| format!("Failed to write model.onnx: {e}"))?;
+    std::fs::create_dir_all(&temp).map_err(|e| format!("Failed to create temp dir: {e}"))?;
+    std::fs::write(temp.join("model.onnx"), MODEL_BYTES).map_err(|e| format!("Failed to write model.onnx: {e}"))?;
 
     for (name, bytes) in VOICES {
-        std::fs::write(temp.join(name), bytes)
-            .map_err(|e| format!("Failed to write {name}: {e}"))?;
+        std::fs::write(temp.join(name), bytes).map_err(|e| format!("Failed to write {name}: {e}"))?;
     }
 
     let voice_dir = temp.to_string_lossy().into_owned();
@@ -173,10 +169,8 @@ impl KokoroBackend {
         if slot.is_some() {
             return Ok(());
         }
-        let (stream, handle) = OutputStream::try_default()
-            .map_err(|e| format!("Audio output failed: {e}"))?;
-        let sink = Sink::try_new(&handle)
-            .map_err(|e| format!("Sink creation failed: {e}"))?;
+        let (stream, handle) = OutputStream::try_default().map_err(|e| format!("Audio output failed: {e}"))?;
+        let sink = Sink::try_new(&handle).map_err(|e| format!("Sink creation failed: {e}"))?;
         *slot = Some(AudioState {
             _stream: stream,
             sink,
@@ -298,7 +292,6 @@ impl KokoroBackend {
             state.sink.play();
         }
     }
-
 
     pub fn set_voice(&mut self, voice: &str) {
         self.voice = voice.to_string();

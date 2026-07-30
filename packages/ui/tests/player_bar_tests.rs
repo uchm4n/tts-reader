@@ -14,7 +14,9 @@ fn has_attribute(edits: &[Mutation], name: &str, value_contains: &str) -> bool {
 }
 
 fn has_text(edits: &[Mutation], value: &str) -> bool {
-    edits.iter().any(|m| matches!(m, Mutation::CreateTextNode { value: v, .. } if v == value))
+    edits
+        .iter()
+        .any(|m| matches!(m, Mutation::CreateTextNode { value: v, .. } if v == value))
 }
 
 #[test]

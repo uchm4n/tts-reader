@@ -30,7 +30,9 @@ impl MacOSOption {
 impl TextSelector for MacOSOption {
     fn get_selected_text(&self) -> Option<String> {
         if !self.enabled {
-            eprintln!("[TTS Reader] Accessibility permissions not granted. Falling back to clipboard.");
+            eprintln!(
+                "[TTS Reader] Accessibility permissions not granted. Falling back to clipboard."
+            );
             return None;
         }
 

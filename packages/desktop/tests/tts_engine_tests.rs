@@ -101,9 +101,6 @@ fn resume_when_not_speaking_is_safe() {
     assert!(!engine.is_speaking());
 }
 
-
-
-
 #[test]
 fn pause_then_resume_does_not_panic() {
     let mut engine = TtsEngine::new();
@@ -184,7 +181,10 @@ fn is_speaking_considers_rodio_sink() {
 fn stop_does_not_immediately_clear_speaking_if_rodio_has_audio() {
     let mut engine = TtsEngine::new();
     // Use longer text to increase chance of audio being buffered
-    engine.speak("hello world this is a longer text for testing audio buffering", 1.0);
+    engine.speak(
+        "hello world this is a longer text for testing audio buffering",
+        1.0,
+    );
     // Wait a bit for synthesis to produce some audio
     std::thread::sleep(Duration::from_millis(100));
     // Even after stop, if rodio has buffered audio, is_speaking might still be true

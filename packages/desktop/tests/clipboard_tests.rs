@@ -10,14 +10,12 @@ fn clipboard_command() -> Command {
 #[cfg(target_os = "linux")]
 fn clipboard_command() -> Command {
     // Try xclip first, fall back to xsel
-    Command::new("xclip")
-        .args(["-selection", "clipboard", "-o"])
+    Command::new("xclip").args(["-selection", "clipboard", "-o"])
 }
 
 #[cfg(target_os = "windows")]
 fn clipboard_command() -> Command {
-    Command::new("powershell")
-        .args(["-command", "Get-Clipboard"])
+    Command::new("powershell").args(["-command", "Get-Clipboard"])
 }
 
 #[test]

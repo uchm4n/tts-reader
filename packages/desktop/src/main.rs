@@ -8,13 +8,13 @@ use dioxus_desktop::{
 };
 
 mod clipboard_monitor;
-mod tts_engine;
 mod text_selector;
+mod tts_engine;
 
 use clipboard_monitor::use_clipboard_monitor;
-use tts_engine::TtsEngine;
 use text_selector::create_text_selector;
 use text_selector::is_text_selection_available;
+use tts_engine::TtsEngine;
 use ui::{AlwaysOnTopEvent, PlayerBar};
 
 const APP_NAME: &str = "TTS Reader";

@@ -3,9 +3,9 @@
 //! Reads selected text from the currently focused application.
 //! Falls back gracefully on unsupported platforms or missing permissions.
 
+pub mod linux;
 pub mod macos;
 pub mod windows;
-pub mod linux;
 
 /// Reads selected text from the currently focused application.
 pub trait TextSelector: Send {
