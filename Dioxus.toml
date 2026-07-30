@@ -3,5 +3,6 @@ name = "tts-reader"
 default-platform = "desktop"
 
 [bundle]
+icon = ["assets/logo.png", "assets/logo.icns"]
 identifier = "com.uchm4n.ttsreader"
 publisher = "UchMan"

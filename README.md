@@ -21,9 +21,9 @@ Download the latest release:
 
 **Note**: application only works for **MacOS** and **Linux**, future support for **Windows** is planned.
 
-[TTS Reader.dmg](https://organizer.lamart.ge/downloads/TtsReader-v0.0.3.dmg)
+[TTS Reader.dmg](https://organizer.lamart.ge/downloads/TtsReader-v0.0.5.dmg)
 
-[TTS Reader.deb](https://organizer.lamart.ge/downloads/TtsReader-v0.0.3.deb)
+[TTS Reader.deb](https://organizer.lamart.ge/downloads/TtsReader-v0.0.5.deb)
 
 
 ## How to Use
