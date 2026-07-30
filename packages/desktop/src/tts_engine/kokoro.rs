@@ -95,17 +95,20 @@ pub struct KokoroBackend {
 unsafe impl Send for KokoroBackend {}
 
 /// Write embedded files to a temp directory and return (model_path, voice_dir).
+/// Skips writing if the model file already exists.
 fn write_embedded_to_temp() -> Result<(PathBuf, String), String> {
     let temp = std::env::temp_dir().join("tts-reader");
-    std::fs::create_dir_all(&temp).map_err(|e| format!("Failed to create temp dir: {e}"))?;
-    std::fs::write(temp.join("model.onnx"), MODEL_BYTES).map_err(|e| format!("Failed to write model.onnx: {e}"))?;
+    let model_path = temp.join("model.onnx");
 
-    for (name, bytes) in VOICES {
-        std::fs::write(temp.join(name), bytes).map_err(|e| format!("Failed to write {name}: {e}"))?;
+    if !model_path.exists() {
+        std::fs::create_dir_all(&temp).map_err(|e| format!("Failed to create temp dir: {e}"))?;
+        std::fs::write(&model_path, MODEL_BYTES).map_err(|e| format!("Failed to write model.onnx: {e}"))?;
+        for (name, bytes) in VOICES {
+            std::fs::write(temp.join(name), bytes).map_err(|e| format!("Failed to write {name}: {e}"))?;
+        }
     }
 
     let voice_dir = temp.to_string_lossy().into_owned();
-    let model_path = temp.join("model.onnx");
     Ok((model_path, voice_dir))
 }
 

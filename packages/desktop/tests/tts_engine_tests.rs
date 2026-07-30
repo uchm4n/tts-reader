@@ -1,4 +1,5 @@
 //! Tests for TtsEngine - uses only public API.
+#![cfg(feature = "tts-tests")]
 
 use std::time::Duration;
 use tts_reader::tts_engine::TtsEngine;
