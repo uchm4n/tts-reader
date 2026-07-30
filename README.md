@@ -15,11 +15,11 @@ A lightweight TTS player that speaks text aloud using Kokoro's 82M-param voice m
 - **Self-Contained** - Model and voices embedded in the binary, no external files needed
 - **Minimal UI** - Tiny floating player that doesn't get in the way
 
-**Note**: application only works for macOS and Linux, future support for Windows is planned.
-
 ## Download
 
 Download the latest release:
+
+**Note**: application only works for **MacOS** and **Linux**, future support for **Windows** is planned.
 
 [TTS Reader.dmg](https://organizer.lamart.ge/downloads/TtsReader-v0.0.3.dmg)
 
