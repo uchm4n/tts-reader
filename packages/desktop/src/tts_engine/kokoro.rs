@@ -94,21 +94,65 @@ pub struct KokoroBackend {
 // The raw pointer to AudioState is only created, read, and dropped on the main thread.
 unsafe impl Send for KokoroBackend {}
 
-/// Write embedded files to a temp directory and return (model_path, voice_dir).
-/// Skips writing if the model file already exists.
-fn write_embedded_to_temp() -> Result<(PathBuf, String), String> {
-    let temp = std::env::temp_dir().join("tts-reader");
-    let model_path = temp.join("model.onnx");
+/// Ensure model and voice files are extracted to ~/.tts-reader/.
+/// Returns (model_path, voice_dir).
+/// Uses .version file as atomicity marker — written last.
+fn ensure_extracted() -> Result<(PathBuf, String), String> {
+    let data_dir = dirs::home_dir()
+        .ok_or("Could not determine home directory")?
+        .join(".tts-reader");
+    let model_path = data_dir.join("model.onnx");
+    let version_file = data_dir.join(".version");
+    let current_version = env!("CARGO_PKG_VERSION");
 
-    if !model_path.exists() {
-        std::fs::create_dir_all(&temp).map_err(|e| format!("Failed to create temp dir: {e}"))?;
-        std::fs::write(&model_path, MODEL_BYTES).map_err(|e| format!("Failed to write model.onnx: {e}"))?;
-        for (name, bytes) in VOICES {
-            std::fs::write(temp.join(name), bytes).map_err(|e| format!("Failed to write {name}: {e}"))?;
+    // Atomic guard: extract only if version file missing or outdated
+    let needs_extract = !version_file.exists()
+        || std::fs::read_to_string(&version_file)
+            .unwrap_or_default()
+            .trim()
+            != current_version;
+
+    if needs_extract {
+        eprintln!("[TTS] Extracting model files to {}", data_dir.display());
+        std::fs::create_dir_all(&data_dir)
+            .map_err(|e| format!("Failed to create data dir: {e}"))?;
+
+        // Write model
+        std::fs::write(&model_path, MODEL_BYTES)
+            .map_err(|e| format!("Failed to write model.onnx: {e}"))?;
+
+        // Verify model size
+        let model_meta = std::fs::metadata(&model_path)
+            .map_err(|e| format!("Failed to stat model.onnx: {e}"))?;
+        if model_meta.len() != MODEL_BYTES.len() as u64 {
+            return Err(format!(
+                "Model file truncated: expected {} bytes, got {}",
+                MODEL_BYTES.len(),
+                model_meta.len()
+            ));
         }
+
+        // Write voices in parallel
+        std::thread::scope(|s| {
+            for (name, bytes) in VOICES {
+                let dir = data_dir.clone();
+                s.spawn(move || {
+                    let path = dir.join(name);
+                    if let Err(e) = std::fs::write(&path, bytes) {
+                        eprintln!("[TTS] Failed to write {name}: {e}");
+                    }
+                });
+            }
+        });
+
+        // Write version LAST — acts as atomicity marker
+        std::fs::write(&version_file, current_version)
+            .map_err(|e| format!("Failed to write version file: {e}"))?;
+
+        eprintln!("[TTS] Extraction complete");
     }
 
-    let voice_dir = temp.to_string_lossy().into_owned();
+    let voice_dir = data_dir.to_string_lossy().into_owned();
     Ok((model_path, voice_dir))
 }
 
@@ -137,7 +181,7 @@ impl KokoroBackend {
             }
             (path, voice_dir)
         } else {
-            write_embedded_to_temp()?
+            ensure_extracted()?
         };
 
         // Temporary runtime for ONNX model loading (runs on spawn_blocking thread).
