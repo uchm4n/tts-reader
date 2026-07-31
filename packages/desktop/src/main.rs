@@ -12,25 +12,14 @@ mod text_selector;
 mod tts_engine;
 
 use clipboard_monitor::use_clipboard_monitor;
-use text_selector::create_text_selector;
+use text_selector::{create_text_selector, get_text_for_playback};
 use tts_engine::TtsEngine;
 use ui::{AlwaysOnTopEvent, PlayerBar};
 
 const APP_NAME: &str = "TTS Reader";
 
-/// Get text for playback: try selected text first, fall back to clipboard.
-fn get_text_for_playback(
-    selector: &mut dyn text_selector::TextSelector,
-    clipboard_text: &str,
-) -> String {
-    selector
-        .get_selected_text()
-        .filter(|t| !t.is_empty())
-        .unwrap_or_else(|| clipboard_text.to_string())
-}
-
 fn main() {
-    dioxus::LaunchBuilder::new()
+    LaunchBuilder::new()
         .with_cfg(
             Config::new().with_window(
                 WindowBuilder::new()

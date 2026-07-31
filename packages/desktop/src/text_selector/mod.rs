@@ -54,3 +54,14 @@ pub fn create_text_selector() -> Box<dyn TextSelector> {
         Box::new(NullSelector)
     }
 }
+
+/// Get text for playback: try selected text first, fall back to clipboard.
+pub fn get_text_for_playback(
+    selector: &mut dyn TextSelector,
+    clipboard_text: &str,
+) -> String {
+    selector
+        .get_selected_text()
+        .filter(|t| !t.is_empty())
+        .unwrap_or_else(|| clipboard_text.to_string())
+}
