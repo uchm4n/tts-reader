@@ -1,6 +1,6 @@
 # TTS Reader
 
-A lightweight TTS player that speaks text aloud using Kokoro's 82M-param voice model.
+A self-contained AI-powered TTS player with 28 human-sounding neural voices, based on Kokoro's 82M-param model — no cloud, no downloads, works entirely offline
 
 ![TTS Reader Screenshot](screenshot.png)
 
