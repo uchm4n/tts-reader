@@ -369,6 +369,18 @@ ui = { path = "packages/ui" }
 - Falls back to clipboard monitor text if simulation fails
 - Works with any app that responds to Cmd+C (browsers, PDF readers, IDEs)
 
+### 8. System Tray Icon
+- Tray icon always visible in menu bar (macOS) / system tray (Windows/Linux)
+- Window hides to tray on close (app keeps running in background)
+- Left-click tray icon shows and focuses the window
+- Right-click context menu with "Show" and "Quit" options
+- "Quit" terminates the app completely
+- Uses existing `logo.png` as tray icon (embedded via `icon_from_memory` + `include_bytes!`)
+- No new dependencies (tray-icon, muda are transitive deps of dioxus-desktop)
+
+**Important**: Uses `use_muda_event_handler` (not `use_tray_menu_event_handler`) due to
+a dioxus-desktop 0.7.x bug — see "Known Bugs / Workarounds" below.
+
 ## UI Layout
 
 ```
@@ -479,6 +491,11 @@ arboard = "3.6"      # Clipboard access via NSPasteboard
 enigo = "0.6"        # Cmd+C simulation via CoreGraphics
 ```
 
+**Transitive crates used directly** (via `dioxus_desktop::tao` and `dioxus_desktop::trayicon`):
+- **tao** — Cross-platform window creation and event loop (re-exported by dioxus-desktop)
+- **muda** — Menu and tray icon system (re-exported as `dioxus_desktop::trayicon::menu`)
+- **tray-icon** — System tray icon (re-exported as `dioxus_desktop::trayicon`)
+
 ## Building & Running
 
 ```sh
@@ -550,7 +567,7 @@ KOKORO_VOICE=af_heart                    # Default voice
 
 ### Short-term
 - [ ] Add keyboard shortcuts for speed control
-- [ ] Add system tray icon
+- [x] Add system tray icon
 - [ ] Add text file import
 - [x] Add voice selection
 
@@ -605,6 +622,22 @@ KOKORO_VOICE=af_heart                    # Default voice
 - **Clipboard simulation** - Uses enigo + arboard for text selection
 - **No Accessibility API** - Avoids TCC trust issues with ad-hoc signing
 
+## Known Bugs / Workarounds
+
+### dioxus-desktop 0.7.x: `use_tray_menu_event_handler` never fires
+
+**Affects**: dioxus-desktop 0.7.x (tested on 0.7.9, 0.7.10)
+**Root cause**: `tray_icon::menu::MenuEvent` is a re-export of `muda::MenuEvent`.
+Both share the same global `MENU_EVENT_HANDLER: OnceCell`. In `App::new()`:
+1. `set_menubar_receiver()` calls `muda::MenuEvent::set_event_handler()` → succeeds (claims the OnceCell)
+2. `set_tray_icon_receiver()` calls `muda::MenuEvent::set_event_handler()` again → silently fails (`OnceCell` already initialized, `let _ = ...`)
+
+**Result**: ALL menu events (including tray menu) arrive as `UserWindowEvent::MudaMenuEvent`, not `TrayMenuEvent`. The `use_tray_menu_event_handler` hook only listens for `TrayMenuEvent` → never fires.
+
+**Workaround**: Use `use_muda_event_handler` instead. Both receive `&MenuEvent` with the same `.id.0` field, so handler code is identical. This is what we use in `main.rs` for tray menu events.
+
+**Tracking**: Will be fixed in dioxus-desktop when the internal `OnceCell` is replaced or a single handler dispatches both variants. If you upgrade dioxus-desktop and `use_tray_menu_event_handler` works, you can switch back.
+
 ## Testing
 
 ### Unit Tests
@@ -615,6 +648,7 @@ cargo test --package tts-reader
 ### Test Coverage
 - **text_selector_tests**: 7 mock-based tests for fallback logic
 - **clipboard_tests**: 3 tests for clipboard command execution
+- **tray_icon_tests**: 10 tests for constants, menu items, and OnceCell bug documentation
 - **tts_engine_tests**: (placeholder for future tests)
 
 ### Why mock tests?
