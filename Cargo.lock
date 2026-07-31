@@ -5223,7 +5223,7 @@ dependencies = [
 
 [[package]]
 name = "tts-reader"
-version = "0.0.5"
+version = "0.0.7"
 dependencies = [
  "arboard",
  "dioxus",
