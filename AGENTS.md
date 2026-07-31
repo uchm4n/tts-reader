@@ -301,7 +301,11 @@ dioxus/
             │   ├── kokoro.rs     # Kokoro ONNX backend (primary)
             │   └── say.rs        # macOS `say` command (fallback)
             ├── clipboard_monitor.rs  # Clipboard polling via `pbpaste`
-            └── text_selector.rs  # Accessibility-based text selection
+            └── text_selector/        # Directory module
+                ├── mod.rs            # TextSelector trait + get_text_for_playback()
+                ├── macos.rs          # Clipboard simulation (enigo + arboard)
+                ├── linux.rs          # Stub (TODO: AT-SPI2)
+                └── windows.rs        # Stub (TODO: UI Automation)
 ```
 
 ## Workspace Configuration
@@ -357,6 +361,13 @@ ui = { path = "packages/ui" }
 - 52 voice files embedded for all supported languages
 - No external files needed at runtime
 - Falls back to temp directory extraction
+
+### 7. Selected Text Reading
+- Simulates Cmd+C via `enigo` (CoreGraphics event posting)
+- Reads selected text from system pasteboard via `arboard`
+- Restores original clipboard content after reading
+- Falls back to clipboard monitor text if simulation fails
+- Works with any app that responds to Cmd+C (browsers, PDF readers, IDEs)
 
 ## UI Layout
 
@@ -417,6 +428,24 @@ pub fn use_clipboard_monitor() -> Signal<String>
 
 Hook that polls the clipboard and returns a signal with the current clipboard text.
 
+### TextSelector (`packages/desktop/src/text_selector/`)
+
+```rust
+pub trait TextSelector: Send {
+    fn get_selected_text(&mut self) -> Option<String>;
+    fn name(&self) -> &str;
+}
+
+pub fn create_text_selector() -> Box<dyn TextSelector>;
+pub fn get_text_for_playback(selector: &mut dyn TextSelector, clipboard_text: &str) -> String;
+```
+
+Platform-specific implementations:
+- **macOS**: Clipboard simulation via `enigo` + `arboard`
+- **Linux/Windows**: Stubs returning `None` (TODO)
+
+The `get_text_for_playback()` function tries selected text first, falls back to clipboard monitor text.
+
 ## State Management
 
 All state lives in `main.rs`:
@@ -443,6 +472,11 @@ rodio = "0.20"
 ort = { version = "2.0", features = ["coreml"] }
 ort-sys = { version = "2.0", features = ["lax-feature-matching"] }
 dotenvy = "5"
+
+# macOS-specific dependencies
+[target.'cfg(target_os = "macos")'.dependencies]
+arboard = "3.6"      # Clipboard access via NSPasteboard
+enigo = "0.6"        # Cmd+C simulation via CoreGraphics
 ```
 
 ## Building & Running
@@ -478,6 +512,14 @@ dx build --release
 - Doesn't obscure the text being read
 - Fast to appear/disappear
 
+### Why clipboard simulation (not Accessibility API)?
+- Accessibility API (`axuielement`) requires per-process trust via TCC
+- Ad-hoc signed apps have unreliable `is_process_trusted()` results
+- Different code-signing identities between dev and compiled builds
+- Clipboard simulation works with any app that responds to Cmd+C
+- Simpler implementation (55 lines vs 250+ lines)
+- No complex accessibility tree traversal needed
+
 ## Kokoro TTS Backend
 
 The Kokoro backend uses the `kokoro-en` crate with ONNX runtime for neural text-to-speech synthesis.
@@ -510,7 +552,7 @@ KOKORO_VOICE=af_heart                    # Default voice
 - [ ] Add keyboard shortcuts for speed control
 - [ ] Add system tray icon
 - [ ] Add text file import
-- [ ] Add voice selection
+- [x] Add voice selection
 
 ### Medium-term
 - [ ] Replace `say` command with NSSpeechSynthesizer FFI
@@ -530,13 +572,19 @@ KOKORO_VOICE=af_heart                    # Default voice
 - Grant accessibility permissions in System Settings → Privacy & Security → Accessibility
 - Ensure the app is running (not just compiled)
 
+### Selected text not reading
+- Grant accessibility permissions: System Settings → Privacy & Security → Accessibility
+- Ensure the app you're reading from supports Cmd+C
+- Check if enigo initializes (look for "[TTS Reader] Failed to initialize input simulator" in logs)
+- Some apps (terminal, password managers) don't respond to simulated Cmd+C
+
 ### No speech output
 - Check if `say` command works in Terminal: `say "Hello World"`
 - Verify audio output is working
 
 ### Clipboard not detected
 - Ensure `pbpaste` works in Terminal: `echo "test" | pbpaste`
-- Check if another app is锁定 the clipboard
+- Check if another app is holding the clipboard
 
 ## Development Tips
 
@@ -544,6 +592,8 @@ KOKORO_VOICE=af_heart                    # Default voice
 2. **Test clipboard**: Run `pbpaste` to see current clipboard content
 3. **Check Dioxus logs**: Use `dx serve --verbose` for detailed logging
 4. **Modify window size**: Update `LogicalSize::new(290.0, 80.0)` in `main.rs`
+5. **Run tests**: `cargo test --package tts-reader` (mock-based, no display server needed)
+6. **Check clippy**: `cargo clippy --package tts-reader`
 
 ## Architecture Notes
 
@@ -552,3 +602,22 @@ KOKORO_VOICE=af_heart                    # Default voice
 - **Minimal dependencies** - Only uses Dioxus desktop and tokio
 - **Process-based TTS** - Uses system commands, not FFI
 - **Signal-based state** - All state managed via Dioxus signals
+- **Clipboard simulation** - Uses enigo + arboard for text selection
+- **No Accessibility API** - Avoids TCC trust issues with ad-hoc signing
+
+## Testing
+
+### Unit Tests
+```bash
+cargo test --package tts-reader
+```
+
+### Test Coverage
+- **text_selector_tests**: 7 mock-based tests for fallback logic
+- **clipboard_tests**: 3 tests for clipboard command execution
+- **tts_engine_tests**: (placeholder for future tests)
+
+### Why mock tests?
+- `get_selected_text()` requires display server + accessibility permissions
+- CoreGraphics events (enigo) SIGTRAP in test harnesses
+- Mock tests cover fallback logic without system dependencies
